@@ -1,6 +1,6 @@
 // js/auth.js
 
-const DATA_FILE = 'data.json'; // Файл с данными
+const DATA_FILE = '../json/data.json'; // Файл с данными
 const CURRENT_USER_KEY = 'autoservice_currentUser';
 const LOCAL_USERS_KEY = 'autoservice_local_users'; // Для новых пользователей
 
@@ -714,3 +714,4 @@ style.textContent = `
 `;
 
 document.head.appendChild(style);
+
