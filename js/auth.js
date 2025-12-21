@@ -1,58 +1,60 @@
 // js/auth.js
 
-const DATA_FILE = 'data.json'; // Файл с данными пользователей
+const DATA_FILE = 'data.json'; // Файл с данными
 const CURRENT_USER_KEY = 'autoservice_currentUser';
+const LOCAL_USERS_KEY = 'autoservice_local_users'; // Для новых пользователей
 
 let currentUser = null;
-let usersDatabase = []; // Все пользователи из data.json
+let usersDatabase = [];
 
 // Инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('auth.js загружен');
     
-    // Загружаем данные пользователей из JSON файла
-    loadUsersDatabase().then(() => {
-        console.log('База данных пользователей загружена:', usersDatabase.length, 'пользователей');
+    try {
+        // Загружаем данные пользователей
+        await loadUsersDatabase();
+        console.log('База данных загружена:', usersDatabase.length, 'пользователей');
         
-        // Загружаем текущего пользователя из localStorage
+        // Загружаем текущего пользователя
         loadCurrentUser();
         
-        // Настраиваем обработчики кнопок в хедере
+        // Настраиваем кнопки
         setupHeaderButtons();
-    }).catch(error => {
-        console.error('Ошибка загрузки базы данных:', error);
-        showMessage('Ошибка загрузки данных. Проверьте файл data.json', 'error');
-    });
+        
+    } catch (error) {
+        console.error('Ошибка инициализации:', error);
+        showMessage('Ошибка загрузки данных', 'error');
+    }
 });
 
-// Загрузка базы данных пользователей из JSON файла
+// Загрузка базы данных пользователей
 async function loadUsersDatabase() {
     try {
-        console.log('Загрузка базы данных из', DATA_FILE);
+        console.log('Загрузка данных из', DATA_FILE);
         const response = await fetch(DATA_FILE);
         
         if (!response.ok) {
-            throw new Error(`Ошибка загрузки файла: ${response.status}`);
+            throw new Error(`HTTP error: ${response.status}`);
         }
         
         const data = await response.json();
         
-        // Проверяем структуру данных
-        if (data.users && Array.isArray(data.users)) {
-            usersDatabase = data.users;
-            console.log('Пользователи загружены из data.json');
-        } else if (Array.isArray(data)) {
-            // Если файл содержит сразу массив пользователей
-            usersDatabase = data;
-            console.log('Пользователи загружены из data.json (прямой массив)');
-        } else {
-            throw new Error('Неверная структура data.json');
-        }
+        // Получаем пользователей из data.json
+        const jsonUsers = data.users || data;
+        
+        // Получаем локальных пользователей (новые регистрации)
+        const localUsers = JSON.parse(localStorage.getItem(LOCAL_USERS_KEY) || '[]');
+        
+        // Объединяем базы
+        usersDatabase = [...jsonUsers, ...localUsers];
+        
+        console.log(`Загружено: ${jsonUsers.length} из JSON, ${localUsers.length} локальных`);
         
     } catch (error) {
-        console.error('Ошибка загрузки usersDatabase:', error);
+        console.error('Ошибка загрузки data.json:', error);
         
-        // Создаем тестового пользователя по умолчанию
+        // Создаем тестовую базу
         usersDatabase = [
             {
                 id: '1',
@@ -66,31 +68,20 @@ async function loadUsersDatabase() {
                 cars: []
             }
         ];
-        
-        console.log('Используется тестовая база данных');
+        console.log('Используется тестовая база');
     }
 }
 
-// Загрузка текущего пользователя из localStorage
+// Загрузка текущего пользователя
 function loadCurrentUser() {
     const userData = localStorage.getItem(CURRENT_USER_KEY);
     if (userData) {
         try {
             currentUser = JSON.parse(userData);
-            console.log('Текущий пользователь загружен:', currentUser.firstName);
-            
-            // Проверяем, существует ли пользователь в базе данных
-            const userExists = usersDatabase.some(u => u.id === currentUser.id);
-            if (!userExists) {
-                console.warn('Пользователь не найден в базе данных, выполняем выход');
-                logout();
-                return;
-            }
-            
-            // Обновляем кнопки в хедере
+            console.log('Текущий пользователь:', currentUser.firstName);
             updateHeaderButtons();
         } catch (error) {
-            console.error('Ошибка загрузки пользователя:', error);
+            console.error('Ошибка парсинга:', error);
             localStorage.removeItem(CURRENT_USER_KEY);
         }
     }
@@ -98,73 +89,65 @@ function loadCurrentUser() {
 
 // Сохранение текущего пользователя
 function saveCurrentUser(user) {
-    currentUser = user;
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+    currentUser = { ...user };
+    delete currentUser.password; // Не храним пароль в сессии
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
     updateHeaderButtons();
 }
 
-// Настройка обработчиков кнопок в хедере
+// Настройка кнопок в хедере
 function setupHeaderButtons() {
-    // Находим кнопки в хедере
     const loginBtn = document.querySelector('.header-btn2');
     const registerBtn = document.querySelector('.header-btn1');
     
     if (loginBtn) {
-        loginBtn.addEventListener('click', function(e) {
+        loginBtn.addEventListener('click', (e) => {
             e.preventDefault();
             openSigninModal();
         });
     }
     
     if (registerBtn) {
-        registerBtn.addEventListener('click', function(e) {
+        registerBtn.addEventListener('click', (e) => {
             e.preventDefault();
             openSignupModal();
         });
     }
 }
 
-// Обновление кнопок в хедере
+// Обновление кнопок
 function updateHeaderButtons() {
     const loginBtn = document.querySelector('.header-btn2');
     const registerBtn = document.querySelector('.header-btn1');
     
+    if (!loginBtn || !registerBtn) return;
+    
     if (currentUser) {
-        // Пользователь авторизован
-        if (loginBtn) {
-            loginBtn.textContent = 'Выйти';
-            loginBtn.style.cursor = 'pointer';
-            loginBtn.onclick = function(e) {
-                e.preventDefault();
-                logout();
-            };
-        }
+        // Авторизован
+        loginBtn.textContent = 'Выйти';
+        loginBtn.onclick = (e) => {
+            e.preventDefault();
+            logout();
+        };
         
-        if (registerBtn) {
-            registerBtn.textContent = 'Профиль';
-            registerBtn.onclick = function(e) {
-                e.preventDefault();
-                openProfileModal();
-            };
-            registerBtn.style.cursor = 'pointer';
-        }
+        registerBtn.textContent = 'Профиль';
+        registerBtn.onclick = (e) => {
+            e.preventDefault();
+            openProfileModal();
+        };
     } else {
-        // Пользователь не авторизован
-        if (loginBtn) {
-            loginBtn.textContent = 'Войти';
-            loginBtn.onclick = function(e) {
-                e.preventDefault();
-                openSigninModal();
-            };
-        }
+        // Не авторизован
+        loginBtn.textContent = 'Войти';
+        loginBtn.onclick = (e) => {
+            e.preventDefault();
+            openSigninModal();
+        };
         
-        if (registerBtn) {
-            registerBtn.textContent = 'Регистрация';
-            registerBtn.onclick = function(e) {
-                e.preventDefault();
-                openSignupModal();
-            };
-        }
+        registerBtn.textContent = 'Регистрация';
+        registerBtn.onclick = (e) => {
+            e.preventDefault();
+            openSignupModal();
+        };
     }
 }
 
@@ -192,16 +175,20 @@ function openSigninModal() {
         </form>
         <div class="auth-switch">
             <p>Нет аккаунта? 
-                <a href="#" onclick="switchToSignup()">Зарегистрироваться</a>
+                <a href="#" class="switch-link" data-to="signup">Зарегистрироваться</a>
             </p>
         </div>
     `);
     
-    // Обработка формы
+    // Обработчики
     modal.querySelector('#signinForm').addEventListener('submit', handleSignin);
-    setupModalClose(modal);
+    modal.querySelector('.switch-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        closeCurrentModal();
+        setTimeout(openSignupModal, 10);
+    });
     
-    // Фокус на поле email
+    setupModalClose(modal);
     setTimeout(() => modal.querySelector('#signinEmail').focus(), 100);
 }
 
@@ -240,16 +227,20 @@ function openSignupModal() {
         </form>
         <div class="auth-switch">
             <p>Уже есть аккаунт? 
-                <a href="#" onclick="switchToSignin()">Войти</a>
+                <a href="#" class="switch-link" data-to="signin">Войти</a>
             </p>
         </div>
     `);
     
-    // Обработка формы
+    // Обработчики
     modal.querySelector('#signupForm').addEventListener('submit', handleSignup);
-    setupModalClose(modal);
+    modal.querySelector('.switch-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        closeCurrentModal();
+        setTimeout(openSigninModal, 10);
+    });
     
-    // Фокус на поле имени
+    setupModalClose(modal);
     setTimeout(() => modal.querySelector('#signupFirstName').focus(), 100);
 }
 
@@ -261,34 +252,28 @@ function handleSignin(e) {
     const password = document.getElementById('signinPassword').value.trim();
     
     if (!email || !password) {
-        showMessage('Пожалуйста, заполните все поля', 'error');
+        showMessage('Заполните все поля', 'error');
         return;
     }
     
-    try {
-        // Ищем пользователя в базе данных из data.json
-        const user = usersDatabase.find(u => u.email === email && u.password === password);
-        
-        if (!user) {
-            showMessage('Неверный email или пароль', 'error');
-            return;
-        }
-        
-        // Сохраняем пользователя (без пароля в текущей сессии)
-        const userSession = { ...user };
-        delete userSession.password;
-        
-        saveCurrentUser(userSession);
-        closeCurrentModal();
-        showMessage(`Добро пожаловать, ${user.firstName}!`, 'success');
-        
-        // Проверяем редирект на запись
-        checkBookingRedirect();
-        
-    } catch (error) {
-        console.error('Ошибка входа:', error);
-        showMessage('Ошибка при входе', 'error');
+    // Ищем пользователя в объединенной базе
+    const user = usersDatabase.find(u => 
+        u.email.toLowerCase() === email.toLowerCase() && 
+        u.password === password
+    );
+    
+    if (!user) {
+        showMessage('Неверный email или пароль', 'error');
+        return;
     }
+    
+    // Вход успешен
+    saveCurrentUser(user);
+    closeCurrentModal();
+    showMessage(`Добро пожаловать, ${user.firstName}!`, 'success');
+    
+    // Проверяем редирект на запись
+    checkBookingRedirect();
 }
 
 // Обработка регистрации
@@ -303,7 +288,7 @@ function handleSignup(e) {
     
     // Валидация
     if (!firstName || !lastName || !email || !phone || !password) {
-        showMessage('Пожалуйста, заполните все поля', 'error');
+        showMessage('Заполните все поля', 'error');
         return;
     }
     
@@ -318,47 +303,44 @@ function handleSignup(e) {
         return;
     }
     
-    try {
-        // Проверяем, нет ли пользователя с таким email
-        const existingUser = usersDatabase.find(u => u.email === email);
-        if (existingUser) {
-            showMessage('Пользователь с таким email уже существует', 'error');
-            return;
-        }
-        
-        // Создаем нового пользователя
-        const newUser = {
-            id: Date.now().toString(),
-            firstName,
-            lastName,
-            email,
-            phone,
-            password,
-            role: 'client',
-            registrationDate: new Date().toISOString().split('T')[0],
-            cars: []
-        };
-        
-        // ВАЖНО: На GitHub Pages мы не можем сохранять в JSON файл,
-        // поэтому сохраняем только в localStorage
-        // Добавляем в массив пользователей
-        usersDatabase.push(newUser);
-        
-        // Сохраняем в текущую сессию (без пароля)
-        const userSession = { ...newUser };
-        delete userSession.password;
-        
-        saveCurrentUser(userSession);
-        closeCurrentModal();
-        showMessage(`Регистрация успешна! Добро пожаловать, ${firstName}!`, 'success');
-        
-        // Проверяем редирект на запись
-        checkBookingRedirect();
-        
-    } catch (error) {
-        console.error('Ошибка регистрации:', error);
-        showMessage('Ошибка при регистрации', 'error');
+    // Проверяем существование пользователя
+    const existingUser = usersDatabase.find(u => 
+        u.email.toLowerCase() === email.toLowerCase()
+    );
+    
+    if (existingUser) {
+        showMessage('Пользователь с таким email уже существует', 'error');
+        return;
     }
+    
+    // Создаем нового пользователя
+    const newUser = {
+        id: Date.now().toString(),
+        firstName,
+        lastName,
+        email,
+        phone,
+        password,
+        role: 'client',
+        registrationDate: new Date().toISOString().split('T')[0],
+        cars: []
+    };
+    
+    // Сохраняем в локальное хранилище
+    const localUsers = JSON.parse(localStorage.getItem(LOCAL_USERS_KEY) || '[]');
+    localUsers.push(newUser);
+    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(localUsers));
+    
+    // Добавляем в текущую базу
+    usersDatabase.push(newUser);
+    
+    // Авторизуем пользователя
+    saveCurrentUser(newUser);
+    closeCurrentModal();
+    showMessage(`Регистрация успешна! Добро пожаловать, ${firstName}!`, 'success');
+    
+    // Проверяем редирект
+    checkBookingRedirect();
 }
 
 // Проверка редиректа на запись
@@ -373,6 +355,8 @@ function checkBookingRedirect() {
             setTimeout(() => {
                 if (typeof window.openBookingForService === 'function') {
                     window.openBookingForService(data.serviceId, data.serviceTitle, data.servicePrice);
+                } else if (currentUser) {
+                    alert(`Вы записывались на: ${data.serviceTitle}`);
                 }
             }, 1000);
             
@@ -382,11 +366,11 @@ function checkBookingRedirect() {
     }
 }
 
-// Открытие модального окна профиля
+// Открытие профиля
 function openProfileModal() {
     if (document.querySelector('.auth-modal')) return;
     
-    // Находим полные данные пользователя в базе
+    // Находим полные данные (из базы или localStorage)
     const fullUserData = usersDatabase.find(u => u.id === currentUser.id) || currentUser;
     
     const modal = createModal(`
@@ -408,28 +392,24 @@ function openProfileModal() {
             <div class="profile-field">
                 <strong>Роль:</strong> ${fullUserData.role === 'client' ? 'Клиент' : fullUserData.role}
             </div>
-            ${fullUserData.cars && fullUserData.cars.length > 0 ? `
-                <div class="profile-field">
-                    <strong>Автомобили:</strong> ${fullUserData.cars.length}
-                </div>
-            ` : ''}
         </div>
-        <div style="margin-top: 20px;">
-            <button class="btn-secondary" onclick="logout()">Выйти</button>
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn-secondary" onclick="logout()" style="flex: 1;">Выйти</button>
+            <button class="btn-secondary" onclick="closeCurrentModal()" style="flex: 1;">Закрыть</button>
         </div>
     `);
     
     setupModalClose(modal);
 }
 
-// Выход из системы
+// Выход
 function logout() {
-    if (confirm('Вы уверены, что хотите выйти?')) {
+    if (confirm('Выйти из аккаунта?')) {
         currentUser = null;
         localStorage.removeItem(CURRENT_USER_KEY);
         updateHeaderButtons();
         closeCurrentModal();
-        showMessage('Вы успешно вышли из системы', 'success');
+        showMessage('Вы успешно вышли', 'success');
     }
 }
 
@@ -444,7 +424,6 @@ function createModal(content) {
             </div>
         </div>
     `;
-    
     document.body.appendChild(modal);
     return modal;
 }
@@ -455,14 +434,14 @@ function setupModalClose(modal) {
         document.body.removeChild(modal);
     });
     
-    // Закрытие по клику на оверлей
+    // Клик на оверлей
     modal.querySelector('.modal-overlay').addEventListener('click', (e) => {
         if (e.target.classList.contains('modal-overlay')) {
             document.body.removeChild(modal);
         }
     });
     
-    // Закрытие по ESC
+    // ESC
     const escHandler = (e) => {
         if (e.key === 'Escape') {
             document.body.removeChild(modal);
@@ -474,20 +453,21 @@ function setupModalClose(modal) {
 
 function closeCurrentModal() {
     const modal = document.querySelector('.auth-modal');
-    if (modal) {
-        document.body.removeChild(modal);
-    }
+    if (modal) document.body.removeChild(modal);
 }
 
 function showMessage(text, type = 'info') {
-    const oldMessage = document.querySelector('.auth-message');
-    if (oldMessage) oldMessage.remove();
+    // Удаляем старое
+    const old = document.querySelector('.auth-message');
+    if (old) old.remove();
     
+    // Создаем новое
     const message = document.createElement('div');
     message.className = `auth-message ${type}`;
     message.textContent = text;
     document.body.appendChild(message);
     
+    // Автоудаление
     setTimeout(() => {
         if (message.parentNode === document.body) {
             message.remove();
@@ -496,30 +476,17 @@ function showMessage(text, type = 'info') {
 }
 
 // Глобальные функции
-window.switchToSignin = function() {
-    closeCurrentModal();
-    setTimeout(openSigninModal, 10);
-};
-
-window.switchToSignup = function() {
-    closeCurrentModal();
-    setTimeout(openSignupModal, 10);
-};
-
-window.checkAuth = function() {
-    return currentUser !== null;
-};
-
-window.getCurrentUser = function() {
-    return currentUser;
-};
-
+window.switchToSignin = openSigninModal;
+window.switchToSignup = openSignupModal;
+window.checkAuth = () => currentUser !== null;
+window.getCurrentUser = () => currentUser;
 window.openSigninModal = openSigninModal;
+window.openProfileModal = openProfileModal;
+window.logout = logout;
 
-// Добавляем CSS стили
+// Добавляем стили
 const style = document.createElement('style');
 style.textContent = `
-    /* Основные стили модального окна */
     .auth-modal {
         position: fixed;
         top: 0;
@@ -551,7 +518,6 @@ style.textContent = `
         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
     
-    /* Кнопка закрытия */
     .close-modal {
         position: absolute;
         top: 15px;
@@ -573,7 +539,6 @@ style.textContent = `
         color: #CC7000;
     }
     
-    /* Заголовок */
     .modal-content h2 {
         color: #333;
         margin-bottom: 25px;
@@ -582,7 +547,6 @@ style.textContent = `
         font-weight: 600;
     }
     
-    /* Формы */
     .form-group {
         margin-bottom: 20px;
     }
@@ -622,7 +586,6 @@ style.textContent = `
         box-shadow: 0 0 0 2px rgba(204, 112, 0, 0.2);
     }
     
-    /* Кнопки */
     .btn-primary {
         width: 100%;
         padding: 14px;
@@ -642,8 +605,7 @@ style.textContent = `
     }
     
     .btn-secondary {
-        width: 100%;
-        padding: 12px;
+        padding: 12px 20px;
         background-color: #f5f5f5;
         color: #333;
         border: 1px solid #ddd;
@@ -658,7 +620,6 @@ style.textContent = `
         border-color: #ccc;
     }
     
-    /* Ссылки для переключения */
     .auth-switch {
         text-align: center;
         padding-top: 20px;
@@ -684,7 +645,6 @@ style.textContent = `
         text-decoration: underline;
     }
     
-    /* Информация профиля */
     .profile-info {
         margin: 20px 0;
     }
@@ -699,7 +659,6 @@ style.textContent = `
         border-bottom: none;
     }
     
-    /* Сообщения */
     .auth-message {
         position: fixed;
         top: 20px;
@@ -726,7 +685,6 @@ style.textContent = `
         background-color: #CC7000;
     }
     
-    /* Анимации */
     @keyframes fadeIn {
         from { opacity: 0; }
         to { opacity: 1; }
