@@ -1,6 +1,6 @@
 // js/services.js
 
-const API_URL = 'http://localhost:3000';
+const API_URL = './data.json';
 
 // Основная функция загрузки и отображения услуг
 async function loadServices() {
@@ -8,7 +8,7 @@ async function loadServices() {
         console.log('Загрузка услуг с JSON Server...');
         
         // Загружаем услуги с сервера
-        const response = await fetch(`${API_URL}/services`);
+        const response = await fetch(API_URL);
         
         if (!response.ok) {
             throw new Error(`Ошибка HTTP: ${response.status}`);
@@ -443,4 +443,5 @@ window.getCurrentUser = function() {
         }
     }
     return null;
+
 };
