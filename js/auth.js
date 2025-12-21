@@ -1,74 +1,39 @@
 // js/auth.js
 
-const DATA_FILE = '../json/data.json'; // Файл с данными
-const CURRENT_USER_KEY = 'autoservice_currentUser';
-const LOCAL_USERS_KEY = 'autoservice_local_users'; // Для новых пользователей
+const DATA_FILE = '../json/data.json';
+const CURRENT_USER_KEY = 'currentUser';
+const LOCAL_USERS_KEY = 'localUsers';
+const LOCAL_BOOKINGS_KEY = 'userBookings';
 
 let currentUser = null;
-let usersDatabase = [];
+let usersData = [];
+let bookingsData = [];
 
-// Инициализация при загрузке страницы
+// Инициализация
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('auth.js загружен');
-    
-    try {
-        // Загружаем данные пользователей
-        await loadUsersDatabase();
-        console.log('База данных загружена:', usersDatabase.length, 'пользователей');
-        
-        // Загружаем текущего пользователя
-        loadCurrentUser();
-        
-        // Настраиваем кнопки
-        setupHeaderButtons();
-        
-    } catch (error) {
-        console.error('Ошибка инициализации:', error);
-        showMessage('Ошибка загрузки данных', 'error');
-    }
+    await loadData();
+    loadCurrentUser();
+    setupHeaderButtons();
 });
 
-// Загрузка базы данных пользователей
-async function loadUsersDatabase() {
+// Загрузка данных из JSON
+async function loadData() {
     try {
-        console.log('Загрузка данных из', DATA_FILE);
         const response = await fetch(DATA_FILE);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error('Ошибка загрузки файла');
         
         const data = await response.json();
+        usersData = data.users || [];
         
-        // Получаем пользователей из data.json
-        const jsonUsers = data.users || data;
+        // Загружаем локальные бронирования
+        const localBookings = JSON.parse(localStorage.getItem(LOCAL_BOOKINGS_KEY) || '[]');
+        bookingsData = [...(data.bookings || []), ...localBookings];
         
-        // Получаем локальных пользователей (новые регистрации)
-        const localUsers = JSON.parse(localStorage.getItem(LOCAL_USERS_KEY) || '[]');
-        
-        // Объединяем базы
-        usersDatabase = [...jsonUsers, ...localUsers];
-        
-        console.log(`Загружено: ${jsonUsers.length} из JSON, ${localUsers.length} локальных`);
-        
+        console.log('Данные загружены:', usersData.length, 'пользователей');
     } catch (error) {
-        console.error('Ошибка загрузки data.json:', error);
-        
-        // Создаем тестовую базу
-        usersDatabase = [
-            {
-                id: '1',
-                firstName: 'Вадим',
-                lastName: 'Лаврук',
-                email: 'vadimlavruk4@gmail.com',
-                phone: '+79991234567',
-                password: 'password123',
-                role: 'client',
-                registrationDate: '2024-01-15',
-                cars: []
-            }
-        ];
-        console.log('Используется тестовая база');
+        console.error('Ошибка:', error);
+        showMessage('Ошибка загрузки данных', 'error');
     }
 }
 
@@ -78,41 +43,51 @@ function loadCurrentUser() {
     if (userData) {
         try {
             currentUser = JSON.parse(userData);
-            console.log('Текущий пользователь:', currentUser.firstName);
             updateHeaderButtons();
         } catch (error) {
-            console.error('Ошибка парсинга:', error);
             localStorage.removeItem(CURRENT_USER_KEY);
         }
     }
 }
 
-// Сохранение текущего пользователя
+// Сохранение пользователя
 function saveCurrentUser(user) {
-    currentUser = { ...user };
-    delete currentUser.password; // Не храним пароль в сессии
+    currentUser = {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role
+    };
     localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
     updateHeaderButtons();
 }
 
-// Настройка кнопок в хедере
+// Настройка кнопок
 function setupHeaderButtons() {
     const loginBtn = document.querySelector('.header-btn2');
     const registerBtn = document.querySelector('.header-btn1');
     
     if (loginBtn) {
-        loginBtn.addEventListener('click', (e) => {
+        loginBtn.onclick = (e) => {
             e.preventDefault();
             openSigninModal();
-        });
+        };
     }
     
     if (registerBtn) {
-        registerBtn.addEventListener('click', (e) => {
+        registerBtn.onclick = (e) => {
             e.preventDefault();
-            openSignupModal();
-        });
+            if (currentUser) {
+                // Открываем профиль
+                window.location.href = 'profile.html';
+            } else {
+                openSignupModal();
+            }
+        };
     }
+    updateHeaderButtons();
 }
 
 // Обновление кнопок
@@ -123,20 +98,18 @@ function updateHeaderButtons() {
     if (!loginBtn || !registerBtn) return;
     
     if (currentUser) {
-        // Авторизован
         loginBtn.textContent = 'Выйти';
         loginBtn.onclick = (e) => {
             e.preventDefault();
             logout();
         };
         
-        registerBtn.textContent = 'Профиль';
+        registerBtn.textContent = currentUser.firstName;
         registerBtn.onclick = (e) => {
             e.preventDefault();
-            openProfileModal();
+            window.location.href = 'profile.html';
         };
     } else {
-        // Не авторизован
         loginBtn.textContent = 'Войти';
         loginBtn.onclick = (e) => {
             e.preventDefault();
@@ -155,93 +128,114 @@ function updateHeaderButtons() {
 function openSigninModal() {
     if (document.querySelector('.auth-modal')) return;
     
-    const modal = createModal(`
-        <button class="close-modal">&times;</button>
-        <h2>Вход в аккаунт</h2>
-        <form id="signinForm">
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="signinEmail" required 
-                       placeholder="Email" 
-                       value="vadimlavruk4@gmail.com">
+    const modal = document.createElement('div');
+    modal.className = 'auth-modal';
+    modal.innerHTML = `
+        <div class="modal-overlay">
+            <div class="modal-content">
+                <button class="close-modal">&times;</button>
+                <h2>Вход в аккаунт</h2>
+                <form id="signinForm">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="signinEmail" required placeholder="Email" value="vadimlavruk4@gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Пароль</label>
+                        <input type="password" id="signinPassword" required placeholder="Пароль" value="password123">
+                    </div>
+                    <button type="submit" class="btn-primary">Войти</button>
+                </form>
+                <div class="auth-switch">
+                    <p>Нет аккаунта? <a href="#" class="switch-to-signup">Зарегистрироваться</a></p>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Пароль</label>
-                <input type="password" id="signinPassword" required 
-                       placeholder="Введите пароль" 
-                       value="password123">
-            </div>
-            <button type="submit" class="btn-primary">Войти</button>
-        </form>
-        <div class="auth-switch">
-            <p>Нет аккаунта? 
-                <a href="#" class="switch-link" data-to="signup">Зарегистрироваться</a>
-            </p>
         </div>
-    `);
+    `;
+    
+    document.body.appendChild(modal);
     
     // Обработчики
-    modal.querySelector('#signinForm').addEventListener('submit', handleSignin);
-    modal.querySelector('.switch-link').addEventListener('click', (e) => {
-        e.preventDefault();
-        closeCurrentModal();
-        setTimeout(openSignupModal, 10);
-    });
+    modal.querySelector('.close-modal').onclick = () => modal.remove();
+    modal.querySelector('.modal-overlay').onclick = (e) => {
+        if (e.target === modal.querySelector('.modal-overlay')) modal.remove();
+    };
     
-    setupModalClose(modal);
-    setTimeout(() => modal.querySelector('#signinEmail').focus(), 100);
+    modal.querySelector('.switch-to-signup').onclick = (e) => {
+        e.preventDefault();
+        modal.remove();
+        setTimeout(openSignupModal, 10);
+    };
+    
+    modal.querySelector('#signinForm').onsubmit = handleSignin;
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') modal.remove();
+    });
 }
 
 // Открытие модального окна регистрации
 function openSignupModal() {
     if (document.querySelector('.auth-modal')) return;
     
-    const modal = createModal(`
-        <button class="close-modal">&times;</button>
-        <h2>Регистрация</h2>
-        <form id="signupForm">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Имя</label>
-                    <input type="text" id="signupFirstName" required placeholder="Имя">
+    const modal = document.createElement('div');
+    modal.className = 'auth-modal';
+    modal.innerHTML = `
+        <div class="modal-overlay">
+            <div class="modal-content">
+                <button class="close-modal">&times;</button>
+                <h2>Регистрация</h2>
+                <form id="signupForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Имя</label>
+                            <input type="text" id="signupFirstName" required placeholder="Имя">
+                        </div>
+                        <div class="form-group">
+                            <label>Фамилия</label>
+                            <input type="text" id="signupLastName" required placeholder="Фамилия">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="signupEmail" required placeholder="Email">
+                    </div>
+                    <div class="form-group">
+                        <label>Телефон</label>
+                        <input type="tel" id="signupPhone" required placeholder="Телефон">
+                    </div>
+                    <div class="form-group">
+                        <label>Пароль</label>
+                        <input type="password" id="signupPassword" required placeholder="Не менее 6 символов">
+                    </div>
+                    <button type="submit" class="btn-primary">Зарегистрироваться</button>
+                </form>
+                <div class="auth-switch">
+                    <p>Уже есть аккаунт? <a href="#" class="switch-to-signin">Войти</a></p>
                 </div>
-                <div class="form-group">
-                    <label>Фамилия</label>
-                    <input type="text" id="signupLastName" required placeholder="Фамилия">
-                </div>
             </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="signupEmail" required placeholder="Email">
-            </div>
-            <div class="form-group">
-                <label>Телефон</label>
-                <input type="tel" id="signupPhone" required placeholder="Телефон">
-            </div>
-            <div class="form-group">
-                <label>Пароль</label>
-                <input type="password" id="signupPassword" required 
-                       placeholder="Не менее 6 символов">
-            </div>
-            <button type="submit" class="btn-primary">Зарегистрироваться</button>
-        </form>
-        <div class="auth-switch">
-            <p>Уже есть аккаунт? 
-                <a href="#" class="switch-link" data-to="signin">Войти</a>
-            </p>
         </div>
-    `);
+    `;
+    
+    document.body.appendChild(modal);
     
     // Обработчики
-    modal.querySelector('#signupForm').addEventListener('submit', handleSignup);
-    modal.querySelector('.switch-link').addEventListener('click', (e) => {
-        e.preventDefault();
-        closeCurrentModal();
-        setTimeout(openSigninModal, 10);
-    });
+    modal.querySelector('.close-modal').onclick = () => modal.remove();
+    modal.querySelector('.modal-overlay').onclick = (e) => {
+        if (e.target === modal.querySelector('.modal-overlay')) modal.remove();
+    };
     
-    setupModalClose(modal);
-    setTimeout(() => modal.querySelector('#signupFirstName').focus(), 100);
+    modal.querySelector('.switch-to-signin').onclick = (e) => {
+        e.preventDefault();
+        modal.remove();
+        setTimeout(openSigninModal, 10);
+    };
+    
+    modal.querySelector('#signupForm').onsubmit = handleSignup;
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') modal.remove();
+    });
 }
 
 // Обработка входа
@@ -256,23 +250,18 @@ function handleSignin(e) {
         return;
     }
     
-    // Ищем пользователя в объединенной базе
-    const user = usersDatabase.find(u => 
-        u.email.toLowerCase() === email.toLowerCase() && 
-        u.password === password
-    );
+    // Ищем пользователя в базе из JSON
+    const user = usersData.find(u => u.email === email && u.password === password);
     
     if (!user) {
         showMessage('Неверный email или пароль', 'error');
         return;
     }
     
-    // Вход успешен
     saveCurrentUser(user);
-    closeCurrentModal();
+    document.querySelector('.auth-modal')?.remove();
     showMessage(`Добро пожаловать, ${user.firstName}!`, 'success');
     
-    // Проверяем редирект на запись
     checkBookingRedirect();
 }
 
@@ -304,11 +293,7 @@ function handleSignup(e) {
     }
     
     // Проверяем существование пользователя
-    const existingUser = usersDatabase.find(u => 
-        u.email.toLowerCase() === email.toLowerCase()
-    );
-    
-    if (existingUser) {
+    if (usersData.some(u => u.email === email)) {
         showMessage('Пользователь с таким email уже существует', 'error');
         return;
     }
@@ -322,31 +307,27 @@ function handleSignup(e) {
         phone,
         password,
         role: 'client',
-        registrationDate: new Date().toISOString().split('T')[0],
-        cars: []
+        registrationDate: new Date().toISOString().split('T')[0]
     };
     
-    // Сохраняем в локальное хранилище
+    // Сохраняем локально
     const localUsers = JSON.parse(localStorage.getItem(LOCAL_USERS_KEY) || '[]');
     localUsers.push(newUser);
     localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(localUsers));
     
     // Добавляем в текущую базу
-    usersDatabase.push(newUser);
+    usersData.push(newUser);
     
-    // Авторизуем пользователя
     saveCurrentUser(newUser);
-    closeCurrentModal();
+    document.querySelector('.auth-modal')?.remove();
     showMessage(`Регистрация успешна! Добро пожаловать, ${firstName}!`, 'success');
     
-    // Проверяем редирект
     checkBookingRedirect();
 }
 
 // Проверка редиректа на запись
 function checkBookingRedirect() {
     const bookingRedirect = localStorage.getItem('bookingRedirect');
-    
     if (bookingRedirect) {
         try {
             const data = JSON.parse(bookingRedirect);
@@ -355,51 +336,12 @@ function checkBookingRedirect() {
             setTimeout(() => {
                 if (typeof window.openBookingForService === 'function') {
                     window.openBookingForService(data.serviceId, data.serviceTitle, data.servicePrice);
-                } else if (currentUser) {
-                    alert(`Вы записывались на: ${data.serviceTitle}`);
                 }
             }, 1000);
-            
         } catch (error) {
             localStorage.removeItem('bookingRedirect');
         }
     }
-}
-
-// Открытие профиля
-function openProfileModal() {
-    if (document.querySelector('.auth-modal')) return;
-    
-    // Находим полные данные (из базы или localStorage)
-    const fullUserData = usersDatabase.find(u => u.id === currentUser.id) || currentUser;
-    
-    const modal = createModal(`
-        <button class="close-modal">&times;</button>
-        <h2>Профиль пользователя</h2>
-        <div class="profile-info">
-            <div class="profile-field">
-                <strong>Имя:</strong> ${fullUserData.firstName} ${fullUserData.lastName}
-            </div>
-            <div class="profile-field">
-                <strong>Email:</strong> ${fullUserData.email}
-            </div>
-            <div class="profile-field">
-                <strong>Телефон:</strong> ${fullUserData.phone}
-            </div>
-            <div class="profile-field">
-                <strong>Дата регистрации:</strong> ${fullUserData.registrationDate}
-            </div>
-            <div class="profile-field">
-                <strong>Роль:</strong> ${fullUserData.role === 'client' ? 'Клиент' : fullUserData.role}
-            </div>
-        </div>
-        <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button class="btn-secondary" onclick="logout()" style="flex: 1;">Выйти</button>
-            <button class="btn-secondary" onclick="closeCurrentModal()" style="flex: 1;">Закрыть</button>
-        </div>
-    `);
-    
-    setupModalClose(modal);
 }
 
 // Выход
@@ -408,66 +350,35 @@ function logout() {
         currentUser = null;
         localStorage.removeItem(CURRENT_USER_KEY);
         updateHeaderButtons();
-        closeCurrentModal();
         showMessage('Вы успешно вышли', 'success');
     }
 }
 
-// Вспомогательные функции
-function createModal(content) {
-    const modal = document.createElement('div');
-    modal.className = 'auth-modal';
-    modal.innerHTML = `
-        <div class="modal-overlay">
-            <div class="modal-content">
-                ${content}
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    return modal;
-}
-
-function setupModalClose(modal) {
-    // Кнопка закрытия
-    modal.querySelector('.close-modal').addEventListener('click', () => {
-        document.body.removeChild(modal);
-    });
-    
-    // Клик на оверлей
-    modal.querySelector('.modal-overlay').addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal-overlay')) {
-            document.body.removeChild(modal);
-        }
-    });
-    
-    // ESC
-    const escHandler = (e) => {
-        if (e.key === 'Escape') {
-            document.body.removeChild(modal);
-            document.removeEventListener('keydown', escHandler);
-        }
-    };
-    document.addEventListener('keydown', escHandler);
-}
-
-function closeCurrentModal() {
-    const modal = document.querySelector('.auth-modal');
-    if (modal) document.body.removeChild(modal);
-}
-
+// Показать сообщение
 function showMessage(text, type = 'info') {
-    // Удаляем старое
-    const old = document.querySelector('.auth-message');
-    if (old) old.remove();
+    const oldMessage = document.querySelector('.auth-message');
+    if (oldMessage) oldMessage.remove();
     
-    // Создаем новое
     const message = document.createElement('div');
     message.className = `auth-message ${type}`;
     message.textContent = text;
+    message.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 5px;
+        z-index: 10001;
+        animation: slideIn 0.3s ease;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        color: white;
+        background-color: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#CC7000'};
+    `;
+    
     document.body.appendChild(message);
     
-    // Автоудаление
     setTimeout(() => {
         if (message.parentNode === document.body) {
             message.remove();
@@ -476,12 +387,8 @@ function showMessage(text, type = 'info') {
 }
 
 // Глобальные функции
-window.switchToSignin = openSigninModal;
-window.switchToSignup = openSignupModal;
-window.checkAuth = () => currentUser !== null;
 window.getCurrentUser = () => currentUser;
-window.openSigninModal = openSigninModal;
-window.openProfileModal = openProfileModal;
+window.checkAuth = () => currentUser !== null;
 window.logout = logout;
 
 // Добавляем стили
@@ -504,7 +411,6 @@ style.textContent = `
         display: flex;
         justify-content: center;
         align-items: center;
-        animation: fadeIn 0.3s ease;
     }
     
     .modal-content {
@@ -514,7 +420,6 @@ style.textContent = `
         max-width: 400px;
         width: 90%;
         position: relative;
-        animation: slideUp 0.3s ease;
         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
     
@@ -532,11 +437,6 @@ style.textContent = `
         height: 30px;
         line-height: 30px;
         text-align: center;
-        transition: color 0.3s;
-    }
-    
-    .close-modal:hover {
-        color: #CC7000;
     }
     
     .modal-content h2 {
@@ -544,7 +444,6 @@ style.textContent = `
         margin-bottom: 25px;
         text-align: center;
         font-size: 24px;
-        font-weight: 600;
     }
     
     .form-group {
@@ -577,13 +476,11 @@ style.textContent = `
         border-radius: 5px;
         font-size: 16px;
         box-sizing: border-box;
-        transition: border-color 0.3s, box-shadow 0.3s;
     }
     
     input:focus {
         outline: none;
         border-color: #CC7000;
-        box-shadow: 0 0 0 2px rgba(204, 112, 0, 0.2);
     }
     
     .btn-primary {
@@ -597,27 +494,6 @@ style.textContent = `
         font-weight: bold;
         cursor: pointer;
         margin-bottom: 20px;
-        transition: background-color 0.3s;
-    }
-    
-    .btn-primary:hover {
-        background-color: #b36200;
-    }
-    
-    .btn-secondary {
-        padding: 12px 20px;
-        background-color: #f5f5f5;
-        color: #333;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        font-size: 16px;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-    
-    .btn-secondary:hover {
-        background-color: #e5e5e5;
-        border-color: #ccc;
     }
     
     .auth-switch {
@@ -637,68 +513,6 @@ style.textContent = `
         color: #CC7000;
         font-weight: bold;
         text-decoration: none;
-        transition: color 0.3s;
-    }
-    
-    .auth-switch a:hover {
-        color: #b36200;
-        text-decoration: underline;
-    }
-    
-    .profile-info {
-        margin: 20px 0;
-    }
-    
-    .profile-field {
-        padding: 10px 0;
-        border-bottom: 1px solid #eee;
-        color: #333;
-    }
-    
-    .profile-field:last-child {
-        border-bottom: none;
-    }
-    
-    .auth-message {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        border-radius: 5px;
-        z-index: 10001;
-        animation: slideIn 0.3s ease;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        color: white;
-    }
-    
-    .auth-message.success {
-        background-color: #4CAF50;
-    }
-    
-    .auth-message.error {
-        background-color: #f44336;
-    }
-    
-    .auth-message.info {
-        background-color: #CC7000;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-    
-    @keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
     }
     
     @keyframes slideIn {
@@ -714,4 +528,3 @@ style.textContent = `
 `;
 
 document.head.appendChild(style);
-
