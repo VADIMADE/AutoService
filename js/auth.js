@@ -81,7 +81,7 @@ function setupHeaderButtons() {
             e.preventDefault();
             if (currentUser) {
                 // Открываем профиль
-                window.location.href = 'profile.html';
+                window.location.href = '../pages/profile.html';
             } else {
                 openSignupModal();
             }
@@ -107,7 +107,7 @@ function updateHeaderButtons() {
         registerBtn.textContent = currentUser.firstName;
         registerBtn.onclick = (e) => {
             e.preventDefault();
-            window.location.href = 'profile.html';
+            window.location.href = '../pages/profile.html';
         };
     } else {
         loginBtn.textContent = 'Войти';
@@ -528,3 +528,4 @@ style.textContent = `
 `;
 
 document.head.appendChild(style);
+
