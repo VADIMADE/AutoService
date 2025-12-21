@@ -1,0 +1,748 @@
+@media (max-width: 1150px) {
+  /* header */
+
+  .header-nav {
+    display: none;
+  }
+
+  .header-menu-hamb {
+    display: flex;
+    align-items: center;
+    z-index: 101;
+  }
+
+  .header-menu-hamb-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+  }
+
+  .popup {
+    position: fixed;
+    top: 0px;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background-color: #393939;
+    z-index: 100;
+    display: flex;
+    transition: 0.5s;
+  }
+
+  .popup.open {
+    left: 0;
+  }
+
+  .popup .header-list {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .popup .header-list>li {
+    width: 100%;
+  }
+
+  .popup .header-list>li>a {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    font-size: 20px;
+    padding: 20px 0;
+    text-align: center;
+  }
+
+  .popup .header-list>li>a:hover {
+    background-color: rgba(142, 136, 149, 0.1);
+  }
+
+  .header-menu-hamb-field.active .bar:nth-child(2) {
+    opacity: 0;
+  }
+
+  .header-menu-hamb-field.active .bar:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+
+  .header-menu-hamb-field.active .bar:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  body.noscroll {
+    overflow: hidden;
+  }
+
+  .header .container {
+    padding: 0 20px;
+  }
+
+  .header-logo {
+    padding-right: 15px;
+  }
+}
+
+/* Планшеты (768px - 1150px) */
+@media (max-width: 1150px) {
+  /* Основной контент */
+  .services-section {
+    padding: 40px 0;
+  }
+  
+  .service-sec-title {
+    font-size: 34px;
+    margin-bottom: 40px;
+    padding: 0 20px;
+  }
+  
+  .services-grid {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+    gap: 30px;
+    padding: 0 20px;
+  }
+  
+  .service-card {
+    border-radius: 20px;
+  }
+  
+  .service-card-content {
+    padding: 25px;
+  }
+  
+  .service-card-body {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .service-card-image {
+    text-align: center;
+  }
+  
+  .service-card-image img {
+    width: 180px;
+    height: 180px;
+  }
+  
+  /* Контакты */
+  .contacts-section .container {
+    padding: 40px 20px;
+  }
+  
+  .contacts-sec-title {
+    font-size: 34px;
+    margin-bottom: 60px;
+    text-align: center;
+  }
+  
+  .contacts-sec-container {
+    flex-direction: column;
+    gap: 40px;
+    align-items: center;
+  }
+  
+  .contacts-sec-card {
+    width: 100%;
+    max-width: 400px;
+  }
+  
+  /* Футер */
+  .footer .container {
+    padding: 0 40px;
+  }
+  
+  .footer-container {
+    flex-direction: column;
+    gap: 50px;
+    padding-bottom: 50px;
+  }
+  
+  .footer-card-container {
+    flex-direction: column;
+    gap: 40px;
+    padding-top: 0;
+  }
+  
+  .footer-bottom {
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    padding-bottom: 30px;
+  }
+  
+  .footer-links {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+}
+
+/* Мобильные устройства (480px - 768px) */
+@media (max-width: 768px) {
+  /* Шапка */
+  .header .container {
+    grid-template-columns: auto 1fr auto;
+    padding: 10px 15px;
+  }
+  
+  .header-button {
+    gap: 15px;
+  }
+  
+  .header-btn1 {
+    font-size: 16px;
+  }
+  
+  .header-btn2 {
+    font-size: 16px;
+    padding: 12px 25px;
+  }
+  
+  .header-logo {
+    max-width: 150px;
+    padding-right: 10px;
+  }
+  
+  /* Основной контент */
+  .services-section {
+    padding: 30px 0;
+  }
+  
+  .service-sec-title {
+    font-size: 28px;
+    margin-bottom: 30px;
+    padding: 0 15px;
+  }
+  
+  .services-grid {
+    padding: 0 15px;
+    gap: 25px;
+  }
+  
+  .service-card-content {
+    padding: 20px;
+  }
+  
+  .service-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .service-card-title {
+    font-size: 22px;
+  }
+  
+  .service-card-price {
+    font-size: 18px;
+    padding: 6px 12px;
+    align-self: flex-start;
+  }
+  
+  .service-card-image img {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .service-card-text {
+    font-size: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .service-card-list li {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  
+  .service-card-btn {
+    font-size: 15px;
+    padding: 10px 25px;
+    display: block;
+    text-align: center;
+  }
+  
+  /* Контакты */
+  .contacts-section .container {
+    padding: 30px 15px;
+  }
+  
+  .contacts-sec-title {
+    font-size: 28px;
+    margin-bottom: 40px;
+  }
+  
+  .contacts-sec-card {
+    max-width: 300px;
+  }
+  
+  .contacts-sec-card img {
+    height: 60px;
+    width: 60px;
+    margin-top: 30px;
+  }
+  
+  #contacts-sec-messenger-img {
+    height: 80px;
+    width: 80px;
+    margin-top: 25px;
+  }
+  
+  .contacts-sec-card-text {
+    font-size: 18px;
+    margin: 30px 20px;
+  }
+  
+  #contacts-sec-card-text3 {
+    margin: 25px 20px 35px 20px;
+  }
+  
+  .contacts-sec-card-link {
+    margin: 0 20px 25px 20px;
+    padding: 8px 25px;
+    font-size: 14px;
+  }
+  
+  #contacts-sec-card-link2 {
+    padding: 8px 25px;
+  }
+  
+  #contacts-sec-card-link3 {
+    padding: 8px 20px;
+    font-size: 13px;
+  }
+  
+  /* Футер */
+  .footer .container {
+    padding: 0 20px;
+  }
+  
+  .footer-container {
+    gap: 40px;
+    padding-bottom: 40px;
+  }
+  
+  .footer-container img {
+    max-width: 150px;
+    margin: 0 auto;
+  }
+  
+  .footer-title {
+    font-size: 20px;
+    margin-bottom: 25px;
+  }
+  
+  .footer-item {
+    font-size: 16px;
+  }
+  
+  .footer-copyright {
+    font-size: 14px;
+    text-align: center;
+  }
+  
+  .footer-link {
+    font-size: 14px;
+  }
+}
+
+/* Маленькие мобильные (375px - 480px) */
+@media (max-width: 480px) {
+  /* Шапка */
+  .header .container {
+    padding: 8px 10px;
+  }
+  
+  .header-btn1 {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  
+  .header-btn2 {
+    font-size: 14px;
+    padding: 10px 18px;
+    white-space: nowrap;
+  }
+  
+  .header-logo {
+    max-width: 130px;
+  }
+  
+  .popup .header-list>li>a {
+    font-size: 18px;
+    padding: 15px 0;
+  }
+  
+  /* Основной контент */
+  .services-section {
+    padding: 25px 0;
+  }
+  
+  .service-sec-title {
+    font-size: 26px;
+    margin-bottom: 25px;
+    padding: 0 10px;
+  }
+  
+  .services-grid {
+    padding: 0 10px;
+    gap: 20px;
+  }
+  
+  .service-card-content {
+    padding: 18px;
+  }
+  
+  .service-card-title {
+    font-size: 20px;
+  }
+  
+  .service-card-price {
+    font-size: 16px;
+    padding: 5px 10px;
+  }
+  
+  .service-card-image img {
+    width: 130px;
+    height: 130px;
+  }
+  
+  .service-card-text {
+    font-size: 14px;
+  }
+  
+  .service-card-list li {
+    font-size: 12px;
+  }
+  
+  .service-card-btn {
+    font-size: 14px;
+    padding: 9px 20px;
+  }
+  
+  /* Контакты */
+  .contacts-section .container {
+    padding: 25px 10px;
+  }
+  
+  .contacts-sec-title {
+    font-size: 24px;
+    margin-bottom: 30px;
+  }
+  
+  .contacts-sec-card {
+    max-width: 280px;
+  }
+  
+  .contacts-sec-card img {
+    height: 50px;
+    width: 50px;
+    margin-top: 25px;
+  }
+  
+  #contacts-sec-messenger-img {
+    height: 70px;
+    width: 70px;
+    margin-top: 20px;
+  }
+  
+  .contacts-sec-card-text {
+    font-size: 16px;
+    margin: 20px 15px;
+  }
+  
+  #contacts-sec-card-text3 {
+    margin: 20px 15px 25px 15px;
+  }
+  
+  .contacts-sec-card-link {
+    margin: 0 15px 20px 15px;
+    padding: 7px 20px;
+    font-size: 13px;
+  }
+  
+  #contacts-sec-card-link2 {
+    padding: 7px 20px;
+  }
+  
+  #contacts-sec-card-link3 {
+    padding: 7px 15px;
+    font-size: 12px;
+  }
+  
+  /* Футер */
+  .footer-container {
+    gap: 30px;
+    padding-bottom: 30px;
+  }
+  
+  .footer-container img {
+    max-width: 130px;
+  }
+  
+  .footer-title {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+  
+  .footer-item {
+    font-size: 15px;
+  }
+  
+  .footer-copyright {
+    font-size: 13px;
+  }
+  
+  .footer-link {
+    font-size: 13px;
+  }
+}
+
+/* Очень маленькие мобильные (320px - 375px) */
+@media (max-width: 375px) {
+  /* Шапка */
+  .header .container {
+    padding: 5px 8px;
+    grid-template-columns: auto 1fr auto;
+  }
+  
+  .header-menu-hamb {
+    width: 30px;
+    height: 24px;
+  }
+  
+  .header-menu-hamb .bar {
+    width: 24px;
+    height: 3px;
+  }
+  
+  .header-btn1 {
+    font-size: 12px;
+  }
+  
+  .header-btn2 {
+    font-size: 12px;
+    padding: 8px 15px;
+  }
+  
+  .header-logo {
+    max-width: 100px;
+    padding-right: 5px;
+  }
+  
+  .popup .header-list>li>a {
+    font-size: 16px;
+    padding: 12px 0;
+  }
+  
+  /* Основной контент */
+  .service-sec-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  .services-grid {
+    padding: 0 8px;
+    gap: 18px;
+  }
+  
+  .service-card-content {
+    padding: 16px;
+  }
+  
+  .service-card-title {
+    font-size: 18px;
+  }
+  
+  .service-card-price {
+    font-size: 15px;
+    padding: 4px 8px;
+  }
+  
+  .service-card-image img {
+    width: 110px;
+    height: 110px;
+  }
+  
+  .service-card-text {
+    font-size: 13px;
+  }
+  
+  .service-card-list li {
+    font-size: 11px;
+  }
+  
+  .service-card-btn {
+    font-size: 13px;
+    padding: 8px 18px;
+  }
+  
+  /* Контакты */
+  .contacts-sec-title {
+    font-size: 22px;
+    margin-bottom: 25px;
+  }
+  
+  .contacts-sec-card {
+    max-width: 260px;
+  }
+  
+  .contacts-sec-card img {
+    height: 45px;
+    width: 45px;
+    margin-top: 20px;
+  }
+  
+  #contacts-sec-messenger-img {
+    height: 60px;
+    width: 60px;
+    margin-top: 18px;
+  }
+  
+  .contacts-sec-card-text {
+    font-size: 15px;
+    margin: 18px 12px;
+  }
+  
+  #contacts-sec-card-text3 {
+    margin: 18px 12px 22px 12px;
+  }
+  
+  .contacts-sec-card-link {
+    margin: 0 12px 18px 12px;
+    padding: 6px 15px;
+    font-size: 12px;
+  }
+  
+  #contacts-sec-card-link2 {
+    padding: 6px 15px;
+  }
+  
+  #contacts-sec-card-link3 {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+  
+  /* Футер */
+  .footer .container {
+    padding: 0 15px;
+  }
+  
+  .footer-container {
+    gap: 25px;
+    padding-bottom: 25px;
+  }
+  
+  .footer-container img {
+    max-width: 100px;
+  }
+  
+  .footer-title {
+    font-size: 16px;
+    margin-bottom: 15px;
+  }
+  
+  .footer-item {
+    font-size: 14px;
+  }
+  
+  .footer-bottom {
+    padding-bottom: 20px;
+  }
+  
+  .footer-copyright {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  
+  .footer-link {
+    font-size: 12px;
+  }
+}
+
+/* Минимальное разрешение 320px */
+@media (max-width: 320px) {
+  .header-btn1 {
+    font-size: 11px;
+  }
+  
+  .header-btn2 {
+    font-size: 11px;
+    padding: 7px 12px;
+  }
+  
+  .header-logo {
+    max-width: 90px;
+  }
+  
+  .service-sec-title {
+    font-size: 22px;
+  }
+  
+  .service-card-title {
+    font-size: 17px;
+  }
+  
+  .service-card-image img {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .service-card-text {
+    font-size: 12px;
+  }
+  
+  .service-card-btn {
+    font-size: 12px;
+    padding: 7px 15px;
+  }
+  
+  .contacts-sec-title {
+    font-size: 20px;
+  }
+  
+  .contacts-sec-card {
+    max-width: 240px;
+  }
+  
+  .footer-container img {
+    max-width: 90px;
+  }
+  
+  .footer-item {
+    font-size: 13px;
+  }
+}
+
+/* Вертикальная ориентация мобильных */
+@media (max-height: 600px) and (orientation: landscape) {
+  .services-section {
+    padding: 20px 0;
+  }
+  
+  .service-sec-title {
+    margin-bottom: 20px;
+  }
+  
+  .services-grid {
+    gap: 15px;
+  }
+  
+  .service-card-content {
+    padding: 15px;
+  }
+  
+  .service-card-body {
+    flex-direction: row;
+    gap: 15px;
+  }
+  
+  .service-card-image img {
+    width: 100px;
+    height: 100px;
+  }
+}

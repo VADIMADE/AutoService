@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../css/profile.css">
+  <link rel="stylesheet" href="../css/media-css/media-profile.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <title>Профиль</title>
+</head>
+
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="header-menu-hamb">
+        <div class="header-menu-hamb-field" id="header-menu-hamb">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </div>
+      </div>
+
+      <div class="popup" id="popup"></div>
+
+      <img class="header-logo" src="../img/header-logo.png" alt="logo-autoservice">
+
+      <nav class="header-nav">
+        <ul class="header-list" id="menu">
+          <li class="header-item">
+            <a class="header-link" href="../index.html">Главная</a>
+          </li>
+          <li class="header-item">
+            <a class="header-link" href="about.html">О нас</a>
+          </li>
+          <li class="header-item">
+            <a class="header-link" href="services.html">Услуги</a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="header-button">
+        <a class="header-btn1" href="#!">Регистрация</a>
+        <a class="header-btn2" href="#!">Войти</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container profile-container">
+      <h1>Мой профиль</h1>
+      
+      <div class="profile-info" id="profileInfo">
+        <!-- Данные загрузятся через JS -->
+      </div>
+
+      <div class="admin-panel" id="adminPanel" style="display: none;">
+        <h2>Административная панель</h2>
+        <a href="admin.html" class="admin-link">Перейти в админ-панель →</a>
+      </div>
+
+      <div class="bookings-section">
+        <h2>Мои записи</h2>
+        
+        <div class="bookings-list" id="bookingsList">
+          <!-- Записи загружаются через JS -->
+        </div>
+        
+        <div class="no-bookings" id="noBookings">
+          <p>У вас пока нет записей на услуги</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-container">
+        <img src="../img/header-logo.png" alt="logo-autoservice">
+
+        <div class="footer-card-container">
+          <div class="footer-card">
+            <p class="footer-title">УСЛУГИ</p>
+            <ul class="footer-list">
+              <li class="footer-item">Диагностика</li>
+              <li class="footer-item">Ремонт двигателя</li>
+              <li class="footer-item">Технический осмотр</li>
+              <li class="footer-item">Шиномонтаж</li>
+            </ul>
+          </div>
+
+          <div class="footer-card">
+            <p class="footer-title">КОНТАКТЫ</p>
+            <ul class="footer-list">
+              <li class="footer-item">Телефон: +375 (33) 777-77-77</li>
+              <li class="footer-item">Email: vadimlavruk4@gmail.com</li>
+              <li class="footer-item">Адрес: ул. Ленинская 89, г. Могилев</li>
+            </ul>
+          </div>
+
+          <div class="footer-card">
+            <p class="footer-title">МЫ В СОЦСЕТЯХ</p>
+            <ul class="footer-list">
+              <li class="footer-item">Instagram</li>
+              <li class="footer-item">Facebook</li>
+              <li class="footer-item">YouTube</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p class="footer-copyright">© AutoService, 2025. Все права защищены</p>
+        <div class="footer-links">
+          <a class="footer-link" href="#!">Политика конфиденциальности</a>
+          <a class="footer-link" href="#!">Пользовательское соглашение</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+
+  <script src="../js/auth.js"></script>
+  <script src="../js/profile.js"></script>
+  <script src="../js/burgerMenu.js"></script>
+</body>
+
+</html>
