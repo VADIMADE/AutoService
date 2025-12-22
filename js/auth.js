@@ -1,5 +1,3 @@
-// js/auth.js
-
 const STORAGE_KEYS = {
     CURRENT_USER: 'autoservice_currentUser',
     USERS: 'autoservice_users',
@@ -23,7 +21,6 @@ function initializeDefaultData() {
     let users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
     
     if (users.length === 0) {
-        // Создаем начальных пользователей
         users = [
             {
                 id: '1',
@@ -195,13 +192,34 @@ function setupHeaderButtons() {
         registerBtn.onclick = (e) => {
             e.preventDefault();
             if (currentUser) {
-                window.location.href = '../pages/profile.html';
+                // ВАЖНО: Определяем правильный путь
+                const profilePath = getProfilePagePath();
+                window.location.href = profilePath;
             } else {
                 openSignupModal();
             }
         };
     }
     updateHeaderButtons();
+}
+
+// Функция для определения правильного пути к профилю
+function getProfilePagePath() {
+    // Получаем текущий URL
+    const currentPath = window.location.pathname;
+    console.log('Текущий путь:', currentPath);
+    
+    // Проверяем, где мы находимся
+    if (currentPath.includes('/pages/')) {
+        // Если уже в папке pages
+        return 'profile.html';
+    } else if (currentPath.includes('/docs/')) {
+        // Если в папке docs
+        return 'pages/profile.html';
+    } else {
+        // По умолчанию (для главной страницы)
+        return 'pages/profile.html';
+    }
 }
 
 // Обновление кнопок
@@ -221,7 +239,8 @@ function updateHeaderButtons() {
         registerBtn.textContent = currentUser.firstName;
         registerBtn.onclick = (e) => {
             e.preventDefault();
-            window.location.href = '../pages/profile.html';
+            const profilePath = getProfilePagePath();
+            window.location.href = profilePath;
         };
     } else {
         loginBtn.textContent = 'Войти';
@@ -495,6 +514,7 @@ function showMessage(text, type = 'info') {
 window.getCurrentUser = () => currentUser;
 window.checkAuth = () => currentUser !== null;
 window.logout = logout;
+window.openSigninModal = openSigninModal;
 window.getUsersFromStorage = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
 window.getServicesFromStorage = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.SERVICES) || '[]');
 window.getBookingsFromStorage = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || '[]');
