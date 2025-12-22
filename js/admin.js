@@ -1,156 +1,153 @@
 // js/admin.js
+console.log('=== АДМИН ПАНЕЛЬ ЗАГРУЖАЕТСЯ ===');
+
+// Константы
 const STORAGE_KEY = 'autoservice_services';
 
-// Основная загрузка
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Админ панель загружена');
+// Проверяем, загрузилась ли страница
+if (document.readyState === 'loading') {
+    console.log('📄 Страница еще загружается...');
+    document.addEventListener('DOMContentLoaded', initAdmin);
+} else {
+    console.log('📄 Страница уже загружена');
+    initAdmin();
+}
+
+// Основная функция инициализации
+function initAdmin() {
+    console.log('🚀 Инициализация админ панели');
     
-    // Проверяем админа
-    if (!checkIfAdmin()) {
-        alert('❌ Только для администраторов');
-        window.location.href = 'profile.html';
-        return;
-    }
+    // Шаг 1: Проверяем элементы на странице
+    console.log('🔍 Проверяю элементы страницы:');
+    console.log('- Форма:', document.getElementById('serviceForm') ? '✅ Найдена' : '❌ Нет');
+    console.log('- Контейнер услуг:', document.getElementById('servicesList') ? '✅ Найден' : '❌ Нет');
+    console.log('- Кнопка Добавить:', document.getElementById('addService') ? '✅ Найдена' : '❌ Нет');
+    console.log('- Кнопка Обновить:', document.getElementById('updateService') ? '✅ Найдена' : '❌ Нет');
     
-    // Инициализируем хранилище
-    initStorage();
+    // Шаг 2: Проверяем авторизацию (временно отключим)
+    // if (!checkAdmin()) {
+    //     alert('Только для администраторов!');
+    //     window.location.href = 'profile.html';
+    //     return;
+    // }
     
-    // Загружаем услуги
+    // Шаг 3: Создаем начальные данные если их нет
+    createInitialData();
+    
+    // Шаг 4: Загружаем услуги
     loadServices();
     
-    // Настраиваем обработчики формы
-    setupForm();
-});
+    // Шаг 5: Настраиваем обработчики
+    setupEventListeners();
+    
+    console.log('✅ Админ панель инициализирована');
+}
 
-// ========== ИНИЦИАЛИЗАЦИЯ ХРАНИЛИЩА ==========
-function initStorage() {
+// Создаем начальные данные
+function createInitialData() {
+    console.log('📝 Проверяю наличие данных...');
+    
     if (!localStorage.getItem(STORAGE_KEY)) {
-        console.log('📝 Создаю начальные услуги');
+        console.log('📦 Создаю начальные услуги');
         
-        const initialServices = [
+        const defaultServices = [
             {
                 id: '1',
                 title: 'ПЛАНОВОЕ ТО',
                 price: 'от 250 бел. руб.',
-                description: 'Комплексная диагностика и замена расходников по регламенту. Сохраните здоровье и ценность вашего автомобиля',
-                image: '../img/card1-img.png',
-                items: [
-                    'Замена моторного масла и фильтра',
-                    'Замена воздушного фильтра',
-                    'Замена салонного фильтра',
-                    'Диагностика систем двигателя',
-                    'Проверка уровня всех технических жидкостей'
-                ]
+                description: 'Комплексная диагностика и замена расходников по регламенту',
+                image: '../img/card1-img.png'
             },
             {
-                id: '2',
+                id: '2', 
                 title: 'СРОЧНЫЙ РЕМОНТ',
                 price: 'от 200 бел. руб.',
-                description: 'Устраним любую неисправность двигателя, ходовой, электроники. Четкий диагноз и фиксированная цена',
-                image: '../img/card2-img.png',
-                items: [
-                    'Диагностика неисправностей',
-                    'Ремонт двигателя',
-                    'Ремонт ходовой части',
-                    'Устранение проблем с электроникой',
-                    'Замена датчиков, ремней ГРМ, помп'
-                ]
+                description: 'Устраним любую неисправность двигателя, ходовой, электроники',
+                image: '../img/card2-img.png'
             },
             {
                 id: '3',
-                title: 'ШИНОМОНТАЖ',
+                title: 'ШИНОМОНТАЖ', 
                 price: 'от 150 бел. руб.',
-                description: 'Быстрая замена и балансировка колес. Предлагаем услуги сезонного хранения вашей резины',
-                image: '../img/card3-img.png',
-                items: [
-                    'Демонтаж/монтаж шин',
-                    'Компьютерная балансировка',
-                    'Ремонт проколов',
-                    'Замена вентилей',
-                    'Хранение сезонной резины'
-                ]
+                description: 'Быстрая замена и балансировка колес',
+                image: '../img/card3-img.png'
             }
         ];
         
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialServices));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultServices));
+        console.log('✅ Создано', defaultServices.length, 'начальных услуг');
+    } else {
+        console.log('📦 Данные уже существуют');
     }
 }
 
-// ========== ПОЛУЧИТЬ УСЛУГИ ==========
-function getServices() {
+// Проверка админа (упрощенная)
+function checkAdmin() {
     try {
-        const servicesJson = localStorage.getItem(STORAGE_KEY);
-        return servicesJson ? JSON.parse(servicesJson) : [];
-    } catch (error) {
-        console.error('❌ Ошибка чтения услуг:', error);
-        return [];
-    }
-}
-
-// ========== СОХРАНИТЬ УСЛУГИ ==========
-function saveServices(services) {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(services));
-        console.log('💾 Услуги сохранены:', services.length);
-        return true;
-    } catch (error) {
-        console.error('❌ Ошибка сохранения:', error);
-        return false;
-    }
-}
-
-// ========== ГЕНЕРАЦИЯ ID ==========
-function generateId() {
-    const services = getServices();
-    if (services.length === 0) return '1';
-    
-    const numericIds = services.map(s => {
-        const idNum = parseInt(s.id);
-        return isNaN(idNum) ? 0 : idNum;
-    }).filter(id => id > 0);
-    
-    if (numericIds.length > 0) {
-        return (Math.max(...numericIds) + 1).toString();
-    }
-    
-    return Date.now().toString();
-}
-
-// ========== ПРОВЕРКА АДМИНА ==========
-function checkIfAdmin() {
-    try {
+        // Проверяем localStorage
+        console.log('🔐 Проверяю localStorage...');
+        console.log('localStorage доступен?', typeof localStorage !== 'undefined');
+        
+        // Создаем тестового админа если его нет
+        if (!localStorage.getItem('currentUser')) {
+            console.log('👤 Создаю тестового администратора');
+            const testAdmin = {
+                id: '1',
+                firstName: 'Админ',
+                lastName: 'Тестовый',
+                email: 'admin@test.com',
+                role: 'admin'
+            };
+            localStorage.setItem('currentUser', JSON.stringify(testAdmin));
+        }
+        
         const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        console.log('👤 Пользователь:', user);
-        return user && user.role === 'admin';
+        console.log('👤 Текущий пользователь:', user);
+        
+        return user.role === 'admin';
     } catch (error) {
-        console.error('❌ Ошибка проверки:', error);
+        console.error('❌ Ошибка проверки админа:', error);
         return false;
     }
 }
 
-// ========== ЗАГРУЗКА УСЛУГ ==========
+// Загрузка услуг
 function loadServices() {
     console.log('📥 Загружаю услуги...');
     
     const container = document.getElementById('servicesList');
     if (!container) {
-        console.error('❌ Контейнер не найден');
+        console.error('❌ Контейнер servicesList не найден!');
+        alert('Ошибка: контейнер услуг не найден');
         return;
     }
     
-    container.innerHTML = '<div class="loading">⏳ Загрузка услуг...</div>';
+    container.innerHTML = '<div style="padding: 20px; text-align: center;">⏳ Загрузка...</div>';
     
     try {
-        const services = getServices();
-        console.log(`✅ Загружено: ${services.length} услуг`);
+        const servicesJson = localStorage.getItem(STORAGE_KEY);
+        console.log('📊 Данные из localStorage:', servicesJson ? 'Есть' : 'Нет');
+        
+        const services = servicesJson ? JSON.parse(servicesJson) : [];
+        console.log('✅ Загружено услуг:', services.length);
+        
         displayServices(services);
+        
     } catch (error) {
         console.error('❌ Ошибка загрузки:', error);
-        showMessage('Ошибка загрузки услуг', 'error');
+        container.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: red;">
+                <h3>❌ Ошибка загрузки</h3>
+                <p>${error.message}</p>
+                <button onclick="location.reload()" style="padding: 10px 20px; margin-top: 20px;">
+                    Обновить страницу
+                </button>
+            </div>
+        `;
     }
 }
 
-// ========== ОТОБРАЖЕНИЕ УСЛУГ ==========
+// Отображение услуг
 function displayServices(services) {
     const container = document.getElementById('servicesList');
     
@@ -164,151 +161,116 @@ function displayServices(services) {
         return;
     }
     
-    container.innerHTML = services.map(service => `
-        <div class="service-card" data-id="${service.id}">
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                <div>
-                    <h3 style="margin: 0 0 5px 0; color: #333;">${service.title || 'Без названия'}</h3>
-                    <div style="color: #CC7000; font-weight: bold; font-size: 18px;">${service.price || 'Цена не указана'}</div>
+    // Создаем HTML для каждой услуги
+    let html = '';
+    services.forEach(service => {
+        html += `
+            <div style="
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 15px;
+            ">
+                <div style="display: flex; justify-content: space-between;">
+                    <div>
+                        <h3 style="margin: 0 0 5px 0;">${service.title || 'Без названия'}</h3>
+                        <div style="color: #CC7000; font-weight: bold; font-size: 18px;">
+                            ${service.price || 'Цена не указана'}
+                        </div>
+                    </div>
+                    <div style="background: #f0f0f0; padding: 2px 8px; border-radius: 10px; font-size: 12px;">
+                        ID: ${service.id}
+                    </div>
                 </div>
-                <div style="background: #f0f0f0; padding: 2px 8px; border-radius: 10px; font-size: 12px;">
-                    ID: ${service.id}
+                
+                <p style="color: #666; margin: 10px 0;">${service.description || 'Нет описания'}</p>
+                
+                ${service.image ? `
+                    <div style="font-size: 12px; color: #888; margin-bottom: 10px;">
+                        🖼️ ${service.image}
+                    </div>
+                ` : ''}
+                
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button onclick="editService('${service.id}')" 
+                            style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        ✏️ Изменить
+                    </button>
+                    <button onclick="deleteService('${service.id}')" 
+                            style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        🗑️ Удалить
+                    </button>
                 </div>
             </div>
-            
-            <p style="color: #666; margin-bottom: 15px;">${service.description || 'Нет описания'}</p>
-            
-            ${service.image ? `
-                <div style="margin-bottom: 10px; font-size: 12px; color: #888;">
-                    🖼️ Изображение: ${service.image}
-                </div>
-            ` : ''}
-            
-            ${service.items && service.items.length > 0 ? `
-                <div style="margin-bottom: 15px;">
-                    <strong style="font-size: 14px;">Что входит:</strong>
-                    <ul style="margin: 5px 0 0 20px; font-size: 14px; color: #555;">
-                        ${service.items.map(item => `<li>${item}</li>`).join('')}
-                    </ul>
-                </div>
-            ` : ''}
-            
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button onclick="editService('${service.id}')" class="btn-edit">✏️ Изменить</button>
-                <button onclick="deleteService('${service.id}')" class="btn-delete">🗑️ Удалить</button>
-            </div>
-        </div>
-    `).join('');
-    
-    // Добавляем стили
-    addStyles();
-}
-
-// ========== СТИЛИ ==========
-function addStyles() {
-    if (document.querySelector('#admin-styles')) return;
-    
-    const style = document.createElement('style');
-    style.id = 'admin-styles';
-    style.textContent = `
-        .service-card {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 15px;
-            transition: all 0.3s;
-        }
-        .service-card:hover {
-            border-color: #CC7000;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-        .btn-edit {
-            padding: 8px 16px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-edit:hover {
-            background: #45a049;
-        }
-        .btn-delete {
-            padding: 8px 16px;
-            background: #f44336;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-delete:hover {
-            background: #d32f2f;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-// ========== НАСТРОЙКА ФОРМЫ ==========
-function setupForm() {
-    const form = document.getElementById('serviceForm');
-    if (!form) return;
-    
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        saveService();
+        `;
     });
     
-    // Кнопка очистки
+    container.innerHTML = html;
+    console.log('✅ Услуги отображены');
+}
+
+// Настройка обработчиков событий
+function setupEventListeners() {
+    console.log('🎯 Настраиваю обработчики событий...');
+    
+    // Форма
+    const form = document.getElementById('serviceForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('📝 Форма отправлена');
+            saveService();
+        });
+        console.log('✅ Обработчик формы добавлен');
+    } else {
+        console.error('❌ Форма не найдена!');
+    }
+    
+    // Кнопки
     const clearBtn = document.getElementById('clearForm');
     if (clearBtn) {
         clearBtn.addEventListener('click', function() {
+            console.log('🗑️ Очистка формы');
             resetForm();
             showMessage('Форма очищена', 'info');
         });
     }
     
-    // Кнопка отмены
     const cancelBtn = document.getElementById('cancelEdit');
     if (cancelBtn) {
         cancelBtn.addEventListener('click', function() {
+            console.log('❌ Отмена редактирования');
             resetForm();
             showMessage('Редактирование отменено', 'info');
         });
     }
     
-    // Кнопка обновления
     const updateBtn = document.getElementById('updateService');
     if (updateBtn) {
         updateBtn.addEventListener('click', function() {
-            handleUpdate();
+            console.log('🔄 Нажата кнопка Обновить');
+            saveService();
         });
     }
+    
+    console.log('✅ Все обработчики настроены');
 }
 
-// ========== ОБНОВИТЬ УСЛУГУ ==========
-function handleUpdate() {
-    console.log('🔄 Обновление услуги');
-    saveService();
-}
-
-// ========== РЕДАКТИРОВАТЬ УСЛУГУ ==========
+// Редактирование услуги
 function editService(id) {
-    console.log('✏️ Редактируем услугу:', id);
+    console.log('✏️ Редактирование услуги ID:', id);
     
     try {
-        const services = getServices();
+        const services = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
         const service = services.find(s => s.id === id);
         
         if (!service) {
-            showMessage('Услуга не найдена', 'error');
+            alert('Услуга не найдена!');
             return;
         }
+        
+        console.log('📋 Найдена услуга:', service.title);
         
         // Заполняем форму
         document.getElementById('serviceId').value = service.id;
@@ -318,110 +280,120 @@ function editService(id) {
         document.getElementById('serviceImage').value = service.image || '';
         
         // Показываем/скрываем кнопки
-        toggleButtons(true);
+        document.getElementById('addService').style.display = 'none';
+        document.getElementById('updateService').style.display = 'inline-block';
+        document.getElementById('cancelEdit').style.display = 'inline-block';
         
         // Прокрутка к форме
-        document.getElementById('serviceForm').scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start' 
-        });
+        document.getElementById('serviceForm').scrollIntoView({ behavior: 'smooth' });
         
-        showMessage(`Загружена услуга: "${service.title}"`, 'success');
+        showMessage(`Загружена: "${service.title}"`, 'success');
         
     } catch (error) {
-        console.error('❌ Ошибка загрузки:', error);
+        console.error('❌ Ошибка редактирования:', error);
         showMessage('Ошибка загрузки услуги', 'error');
     }
 }
 
-// ========== СОХРАНИТЬ УСЛУГУ ==========
+// Сохранение услуги
 function saveService() {
+    console.log('💾 Сохранение услуги...');
+    
+    // Получаем данные из формы
     const id = document.getElementById('serviceId').value;
     const title = document.getElementById('serviceTitle').value.trim();
     const price = document.getElementById('servicePrice').value.trim();
     const description = document.getElementById('serviceDescription').value.trim();
     const image = document.getElementById('serviceImage').value.trim();
     
-    // Валидация
-    if (!title) {
-        showMessage('Введите название услуги', 'error');
-        return;
-    }
-    if (!price) {
-        showMessage('Введите цену услуги', 'error');
-        return;
-    }
-    if (!description) {
-        showMessage('Введите описание услуги', 'error');
-        return;
-    }
+    console.log('📝 Данные формы:', { id, title, price, description, image });
     
-    const serviceData = {
-        title,
-        price,
-        description,
-        image: image || `../img/card${Math.floor(Math.random() * 6) + 1}-img.png`,
-        items: []
-    };
-    
-    console.log('💾 Сохранение:', id ? 'Обновление' : 'Добавление');
+    // Проверяем обязательные поля
+    if (!title || !price || !description) {
+        alert('❌ Заполните все обязательные поля!');
+        return;
+    }
     
     try {
-        const services = getServices();
+        // Получаем текущие услуги
+        const services = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
         
         if (id) {
-            // Обновляем существующую
+            // Обновляем существующую услугу
+            console.log('🔄 Обновление существующей услуги ID:', id);
             const index = services.findIndex(s => s.id === id);
             if (index !== -1) {
-                serviceData.id = id;
-                serviceData.items = services[index].items || []; // Сохраняем старые items
-                services[index] = serviceData;
+                services[index] = { 
+                    id, 
+                    title, 
+                    price, 
+                    description, 
+                    image: image || `../img/card${Math.floor(Math.random() * 6) + 1}-img.png`
+                };
             } else {
-                throw new Error('Услуга не найдена');
+                throw new Error('Услуга для обновления не найдена');
             }
         } else {
-            // Добавляем новую
-            serviceData.id = generateId();
-            services.push(serviceData);
+            // Добавляем новую услугу
+            console.log('➕ Добавление новой услуги');
+            const newId = (services.length > 0) 
+                ? (Math.max(...services.map(s => parseInt(s.id) || 0)) + 1).toString()
+                : '1';
+            
+            services.push({
+                id: newId,
+                title,
+                price,
+                description,
+                image: image || `../img/card${Math.floor(Math.random() * 6) + 1}-img.png`
+            });
         }
         
-        // Сохраняем
-        if (saveServices(services)) {
-            showMessage(id ? '✅ Услуга обновлена!' : '✅ Услуга добавлена!', 'success');
-            resetForm();
-            loadServices();
-        }
+        // Сохраняем обратно
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(services));
+        console.log('✅ Услуга сохранена');
+        
+        // Показываем сообщение
+        showMessage(id ? '✅ Услуга обновлена!' : '✅ Услуга добавлена!', 'success');
+        
+        // Сбрасываем форму и перезагружаем список
+        resetForm();
+        loadServices();
         
     } catch (error) {
         console.error('❌ Ошибка сохранения:', error);
-        showMessage('Ошибка при сохранении', 'error');
+        showMessage('Ошибка при сохранении: ' + error.message, 'error');
     }
 }
 
-// ========== УДАЛИТЬ УСЛУГУ ==========
+// Удаление услуги
 function deleteService(id) {
-    if (!confirm('Удалить эту услугу?')) return;
+    console.log('🗑️ Удаление услуги ID:', id);
+    
+    if (!confirm('Вы уверены, что хотите удалить эту услугу?')) {
+        return;
+    }
     
     try {
-        const services = getServices();
+        const services = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
         const filtered = services.filter(s => s.id !== id);
         
         if (services.length === filtered.length) {
-            showMessage('Услуга не найдена', 'error');
+            alert('Услуга не найдена!');
             return;
         }
         
-        if (saveServices(filtered)) {
-            showMessage('✅ Услуга удалена', 'success');
-            
-            // Если удаляем редактируемую услугу
-            const currentId = document.getElementById('serviceId').value;
-            if (currentId === id) {
-                resetForm();
-            }
-            
-            loadServices();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+        console.log('✅ Услуга удалена');
+        
+        // Если удаляем редактируемую услугу - сбрасываем форму
+        const currentId = document.getElementById('serviceId').value;
+        if (currentId === id) {
+            resetForm();
         }
+        
+        showMessage('✅ Услуга удалена', 'success');
+        loadServices();
         
     } catch (error) {
         console.error('❌ Ошибка удаления:', error);
@@ -429,29 +401,26 @@ function deleteService(id) {
     }
 }
 
-// ========== ПЕРЕКЛЮЧЕНИЕ КНОПОК ==========
-function toggleButtons(isEditMode) {
-    const addBtn = document.getElementById('addService');
-    const updateBtn = document.getElementById('updateService');
-    const cancelBtn = document.getElementById('cancelEdit');
-    
-    if (addBtn) addBtn.style.display = isEditMode ? 'none' : 'inline-block';
-    if (updateBtn) updateBtn.style.display = isEditMode ? 'inline-block' : 'none';
-    if (cancelBtn) cancelBtn.style.display = isEditMode ? 'inline-block' : 'none';
-}
-
-// ========== СБРОС ФОРМЫ ==========
+// Сброс формы
 function resetForm() {
+    console.log('🔄 Сброс формы');
+    
     const form = document.getElementById('serviceForm');
     if (form) {
         form.reset();
         document.getElementById('serviceId').value = '';
-        toggleButtons(false);
+        
+        // Возвращаем кнопки в исходное состояние
+        document.getElementById('addService').style.display = 'inline-block';
+        document.getElementById('updateService').style.display = 'none';
+        document.getElementById('cancelEdit').style.display = 'none';
     }
 }
 
-// ========== СООБЩЕНИЯ ==========
+// Показ сообщений
 function showMessage(text, type = 'info') {
+    console.log('💬 Сообщение:', text, 'Тип:', type);
+    
     // Удаляем старое сообщение
     const oldMsg = document.getElementById('statusMessage');
     if (oldMsg) oldMsg.remove();
@@ -459,103 +428,72 @@ function showMessage(text, type = 'info') {
     // Создаем новое
     const message = document.createElement('div');
     message.id = 'statusMessage';
+    message.innerHTML = text;
     
     // Стили
-    const styles = {
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        padding: '15px 20px',
-        borderRadius: '5px',
-        zIndex: '10000',
-        minWidth: '300px',
-        maxWidth: '500px',
-        animation: 'fadeIn 0.3s',
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '14px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-    };
+    message.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 5px;
+        z-index: 10000;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: fadeIn 0.3s;
+    `;
     
     if (type === 'success') {
-        Object.assign(styles, {
-            background: '#d4edda',
-            color: '#155724',
-            border: '1px solid #c3e6cb'
-        });
-        message.innerHTML = '✅ ' + text;
+        message.style.background = '#d4edda';
+        message.style.color = '#155724';
+        message.style.border = '1px solid #c3e6cb';
     } else if (type === 'error') {
-        Object.assign(styles, {
-            background: '#f8d7da',
-            color: '#721c24',
-            border: '1px solid #f5c6cb'
-        });
-        message.innerHTML = '❌ ' + text;
+        message.style.background = '#f8d7da';
+        message.style.color = '#721c24';
+        message.style.border = '1px solid #f5c6cb';
     } else {
-        Object.assign(styles, {
-            background: '#d1ecf1',
-            color: '#0c5460',
-            border: '1px solid #bee5eb'
-        });
-        message.innerHTML = 'ℹ️ ' + text;
+        message.style.background = '#d1ecf1';
+        message.style.color = '#0c5460';
+        message.style.border = '1px solid #bee5eb';
     }
     
-    Object.assign(message.style, styles);
     document.body.appendChild(message);
     
-    // Автоудаление
+    // Автоудаление через 4 секунды
     setTimeout(() => {
         if (message.parentNode) {
-            message.style.opacity = '0';
-            message.style.transition = 'opacity 0.5s';
-            setTimeout(() => message.remove(), 500);
+            message.remove();
         }
     }, 4000);
 }
 
-// ========== ВЫХОД ==========
+// Добавляем анимацию
+if (!document.querySelector('#admin-animation')) {
+    const style = document.createElement('style');
+    style.id = 'admin-animation';
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Экспортируем функции для глобального использования
+window.editService = editService;
+window.deleteService = deleteService;
+window.loadServices = loadServices;
+window.resetForm = resetForm;
+
+// Функция для выхода
 function logout() {
     if (confirm('Выйти из админ панели?')) {
         localStorage.removeItem('currentUser');
         window.location.href = '../index.html';
     }
 }
-
-// ========== ГЛОБАЛЬНЫЕ ФУНКЦИИ ==========
-window.loadServices = loadServices;
-window.editService = editService;
-window.deleteService = deleteService;
-window.updateService = handleUpdate;
 window.logout = logout;
 
-// Экспортируем функцию для services.js
-window.getServicesFromStorage = function() {
-    return getServices();
-};
-
-// Экспортируем функцию для получения пользователя
-window.getCurrentUser = function() {
-    try {
-        return JSON.parse(localStorage.getItem('currentUser') || 'null');
-    } catch (error) {
-        return null;
-    }
-};
-
-// Анимация для сообщений
-if (!document.querySelector('#animation-styles')) {
-    const style = document.createElement('style');
-    style.id = 'animation-styles';
-    style.textContent = `
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateX(100px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        #statusMessage {
-            animation: fadeIn 0.3s ease-out;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-console.log('✅ admin.js загружен');
-
+console.log('✅ admin.js загружен и готов к работе');
