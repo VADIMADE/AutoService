@@ -1,5 +1,3 @@
-// pages/profile.js
-
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Страница профиля загружена');
     
@@ -87,25 +85,40 @@ function loadAndDisplayUserData(user) {
         if (adminPanel) {
             adminPanel.style.display = 'block';
             adminPanel.innerHTML = `
-                <h3>Административная панель</h3>
+                <h3 style="color: #CC7000; margin-bottom: 15px;">Административная панель</h3>
                 <div style="margin: 20px 0;">
-                    <a href="admin.html" style="
-                        display: inline-block;
+                    <button onclick="goToAdminPage()" style="
                         padding: 12px 24px;
                         background-color: #CC7000;
                         color: white;
-                        text-decoration: none;
+                        border: none;
                         border-radius: 5px;
                         font-weight: bold;
+                        cursor: pointer;
+                        font-size: 16px;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
                     ">
-                        📊 Управление услугами
-                    </a>
+                        📊 Перейти в админ-панель
+                    </button>
                 </div>
-                <p style="color: #666; font-size: 14px;">
-                    В панели администратора вы можете добавлять, редактировать и удалять услуги
+                <p style="color: #666; font-size: 14px; background: #f8f8f8; padding: 10px; border-radius: 5px;">
+                    В админ-панели вы можете добавлять, редактировать и удалять услуги, просматривать все записи.
                 </p>
             `;
         }
+    }
+}
+
+// Функция перехода в админ-панель
+function goToAdminPage() {
+    // Проверяем, что пользователь админ
+    const user = JSON.parse(localStorage.getItem('autoservice_currentUser') || '{}');
+    if (user && user.role === 'admin') {
+        window.location.href = 'admin.html';
+    } else {
+        alert('У вас нет прав администратора');
     }
 }
 
@@ -221,5 +234,6 @@ function logout() {
     }
 }
 
-// Глобальная функция
+// Глобальные функции
 window.logout = logout;
+window.goToAdminPage = goToAdminPage;
