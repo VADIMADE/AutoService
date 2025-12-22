@@ -29,7 +29,7 @@ function initStorage() {
     if (!localStorage.getItem(STORAGE_KEY)) {
         console.log('📝 Инициализирую хранилище услуг');
         
-        // Начальные услуги (можно взять из вашего JSON)
+        // Начальные услуги
         const initialServices = [
             {
                 id: '1',
@@ -109,8 +109,11 @@ function getNextServiceId() {
     
     // Ищем максимальный числовой ID
     const numericIds = services
-        .map(service => parseInt(service.id))
-        .filter(id => !isNaN(id));
+        .map(service => {
+            const idNum = parseInt(service.id);
+            return isNaN(idNum) ? 0 : idNum;
+        })
+        .filter(id => id > 0);
     
     if (numericIds.length > 0) {
         const maxId = Math.max(...numericIds);
@@ -152,6 +155,7 @@ function loadServices() {
     container.innerHTML = '<div class="loading">⏳ Загрузка услуг...</div>';
     
     try {
+        // ИСПРАВЛЕНО: Вызываем локальную функцию, а не window.getServicesFromStorage
         const services = getServicesFromStorage();
         console.log(`✅ Загружено услуг: ${services.length}`);
         
@@ -332,7 +336,7 @@ function editService(id) {
     
     try {
         // Получаем услугу из localStorage
-        const services = getServicesFromStorage();
+        const services = getServicesFromStorage(); // Используем локальную функцию
         const service = services.find(s => s.id === id);
         
         if (!service) {
@@ -447,7 +451,7 @@ function saveService() {
     
     try {
         // Получаем все услуги
-        const services = getServicesFromStorage();
+        const services = getServicesFromStorage(); // Используем локальную функцию
         
         if (id) {
             // Обновляем существующую услугу
@@ -494,7 +498,7 @@ function deleteService(id) {
     
     try {
         // Получаем все услуги
-        const services = getServicesFromStorage();
+        const services = getServicesFromStorage(); // Используем локальную функцию
         
         // Фильтруем удаляемую услугу
         const filteredServices = services.filter(s => s.id !== id);
@@ -562,7 +566,6 @@ function showMessage(text, type = 'info') {
     // Создаем новое
     const message = document.createElement('div');
     message.id = 'statusMessage';
-    message.textContent = text;
     
     // Стили
     const styles = {
@@ -705,9 +708,15 @@ function logout() {
 }
 
 // ========== ЭКСПОРТ ФУНКЦИЙ ДЛЯ ДРУГИХ СТРАНИЦ ==========
-// Функция для получения услуг (для services.js)
+// Важно: создаем отдельную функцию для экспорта, чтобы избежать рекурсии
 window.getServicesFromStorage = function() {
-    return getServicesFromStorage();
+    try {
+        const servicesJson = localStorage.getItem(STORAGE_KEY);
+        return servicesJson ? JSON.parse(servicesJson) : [];
+    } catch (error) {
+        console.error('❌ Ошибка чтения услуг из localStorage:', error);
+        return [];
+    }
 };
 
 // Функция для получения текущего пользователя (совместимость)
