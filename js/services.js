@@ -1,28 +1,20 @@
 // js/services.js
 
-const API_URL = './data.json';
-
 // Основная функция загрузки и отображения услуг
 async function loadServices() {
     try {
-        console.log('Загрузка услуг с JSON Server...');
+        console.log('Загрузка услуг из localStorage...');
         
-        // Загружаем услуги с сервера
-        const response = await fetch(API_URL);
-        
-        if (!response.ok) {
-            throw new Error(`Ошибка HTTP: ${response.status}`);
-        }
-        
-        const services = await response.json();
-        console.log('Услуги загружены:', services);
+        // Загружаем услуги из localStorage
+        const services = window.getServicesFromStorage();
+        console.log('Услуги загружены:', services.length);
         
         // Отображаем услуги на странице
         displayServices(services);
         
     } catch (error) {
         console.error('Ошибка загрузки услуг:', error);
-        showErrorMessage('Не удалось загрузить услуги. Проверьте, запущен ли JSON Server.');
+        showErrorMessage('Не удалось загрузить услуги.');
     }
 }
 
@@ -116,11 +108,10 @@ function addBookingEventListeners() {
 
 // Проверка авторизации пользователя
 function checkUserAuth(serviceId, serviceTitle, servicePrice) {
-    // Проверяем, есть ли данные пользователя в localStorage
-    const userData = localStorage.getItem('currentUser');
+    const user = window.getCurrentUser();
     
-    if (!userData) {
-        // Пользователь не авторизован - сохраняем данные и предлагаем войти
+    if (!user) {
+        // Пользователь не авторизован
         localStorage.setItem('bookingRedirect', JSON.stringify({
             serviceId,
             serviceTitle,
@@ -128,7 +119,6 @@ function checkUserAuth(serviceId, serviceTitle, servicePrice) {
         }));
         
         if (confirm(`Для записи на "${serviceTitle}" необходимо войти в систему.\n\nХотите войти сейчас?`)) {
-            // Открываем модальное окно входа
             if (typeof window.openSigninModal === 'function') {
                 window.openSigninModal();
             } else {
@@ -137,14 +127,7 @@ function checkUserAuth(serviceId, serviceTitle, servicePrice) {
         }
     } else {
         // Пользователь авторизован
-        try {
-            const user = JSON.parse(userData);
-            showBookingModal(serviceId, serviceTitle, servicePrice, user);
-        } catch (error) {
-            console.error('Ошибка парсинга данных пользователя:', error);
-            localStorage.removeItem('currentUser');
-            checkUserAuth(serviceId, serviceTitle, servicePrice);
-        }
+        showBookingModal(serviceId, serviceTitle, servicePrice, user);
     }
 }
 
@@ -303,7 +286,7 @@ function showBookingModal(serviceId, serviceTitle, servicePrice, user) {
     });
     
     // Обработка формы
-    modal.querySelector('#bookingForm').addEventListener('submit', async (e) => {
+    modal.querySelector('#bookingForm').addEventListener('submit', (e) => {
         e.preventDefault();
         
         const dateSelect = modal.querySelector('#bookingDate');
@@ -311,6 +294,7 @@ function showBookingModal(serviceId, serviceTitle, servicePrice, user) {
         const notesTextarea = modal.querySelector('#bookingNotes');
         
         const bookingData = {
+            id: Date.now().toString(),
             userId: user.id,
             serviceId: serviceId,
             date: dateSelect.value,
@@ -322,32 +306,13 @@ function showBookingModal(serviceId, serviceTitle, servicePrice, user) {
         
         console.log('Данные для записи:', bookingData);
         
-        // Отправляем запрос на создание записи
-        try {
-            const response = await fetch(`${API_URL}/bookings`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(bookingData)
-            });
-            
-            if (response.ok) {
-                const newBooking = await response.json();
-                
-                // Закрываем модальное окно
-                document.body.removeChild(modal);
-                
-                // Простое сообщение об успехе вместо модального окна
-                alert(`✅ Запись успешно создана!\n\nУслуга: ${serviceTitle}\nДата: ${dateSelect.options[dateSelect.selectedIndex].text}\nВремя: ${timeSelect.value}\n\nМы свяжемся с вами для подтверждения записи.`);
-                
-            } else {
-                throw new Error('Ошибка сервера');
-            }
-        } catch (error) {
-            console.error('Ошибка создания записи:', error);
-            alert('Ошибка при создании записи. Попробуйте еще раз.');
-        }
+        // Сохраняем запись в localStorage
+        const newBooking = window.saveBookingToStorage(bookingData);
+        
+        // Закрываем модальное окно
+        document.body.removeChild(modal);
+        
+        alert(`✅ Запись успешно создана!\n\nУслуга: ${serviceTitle}\nДата: ${dateSelect.options[dateSelect.selectedIndex].text}\nВремя: ${timeSelect.value}\n\nМы свяжемся с вами для подтверждения записи.`);
     });
 }
 
@@ -398,17 +363,12 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.removeItem('bookingRedirect');
             
             // Если пользователь авторизован, открываем окно записи
-            const userData = localStorage.getItem('currentUser');
-            if (userData) {
-                try {
-                    const user = JSON.parse(userData);
-                    setTimeout(() => {
-                        alert(`Добро пожаловать! Вы выбрали услугу: ${data.serviceTitle}`);
-                        showBookingModal(data.serviceId, data.serviceTitle, data.servicePrice, user);
-                    }, 500);
-                } catch (error) {
-                    console.error('Ошибка:', error);
-                }
+            const user = window.getCurrentUser();
+            if (user) {
+                setTimeout(() => {
+                    alert(`Добро пожаловать! Вы выбрали услугу: ${data.serviceTitle}`);
+                    showBookingModal(data.serviceId, data.serviceTitle, data.servicePrice, user);
+                }, 500);
             }
             
         } catch (error) {
@@ -420,21 +380,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Делаем функции доступными для auth.js
 window.openBookingForService = function(serviceId, serviceTitle, servicePrice) {
-    const userData = localStorage.getItem('currentUser');
-    if (userData) {
-        try {
-            const user = JSON.parse(userData);
-            showBookingModal(serviceId, serviceTitle, servicePrice, user);
-        } catch (error) {
-            console.error('Ошибка:', error);
-            alert('Ошибка загрузки данных пользователя');
-        }
+    const user = window.getCurrentUser();
+    if (user) {
+        showBookingModal(serviceId, serviceTitle, servicePrice, user);
     }
 };
 
 // Функция для проверки авторизации (совместимость с auth.js)
 window.getCurrentUser = function() {
-    const userData = localStorage.getItem('currentUser');
+    const userData = localStorage.getItem('autoservice_currentUser');
     if (userData) {
         try {
             return JSON.parse(userData);
@@ -443,5 +397,4 @@ window.getCurrentUser = function() {
         }
     }
     return null;
-
 };
