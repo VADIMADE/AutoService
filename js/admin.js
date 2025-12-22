@@ -1,75 +1,65 @@
-// admin.js - УПРОЩЕННАЯ ВЕРСИЯ - ВСЕ НА ОДНОЙ СТРАНИЦЕ
+// pages/admin.js
 
 document.addEventListener('DOMContentLoaded', function () {
-  console.log('🚀 Админ панель загружена');
+    console.log('🚀 Админ панель загружена');
 
-  // Проверяем админа
-  if (!checkIfAdmin()) {
-    alert('❌ Только для администраторов');
-    window.location.href = 'profile.html';
-    return;
-  }
+    // Проверяем админа
+    if (!checkIfAdmin()) {
+        alert('❌ Только для администраторов');
+        window.location.href = 'profile.html';
+        return;
+    }
 
-  // Загружаем услуги сразу
-  loadServices();
+    // Загружаем услуги сразу
+    loadServices();
 
-  // Настраиваем обработчики
-  setupForm();
+    // Настраиваем обработчики
+    setupForm();
 });
 
 // ========== ПРОВЕРКА АДМИНА ==========
 function checkIfAdmin() {
-  const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-  console.log('👤 Текущий пользователь:', user);
-  return user && user.role === 'admin';
+    const user = JSON.parse(localStorage.getItem('autoservice_currentUser') || '{}');
+    console.log('👤 Текущий пользователь:', user);
+    return user && user.role === 'admin';
 }
 
 // ========== ЗАГРУЗКА УСЛУГ ==========
-async function loadServices() {
-  console.log('📥 Загружаю услуги...');
+function loadServices() {
+    console.log('📥 Загружаю услуги...');
 
-  const container = document.getElementById('servicesList');
-  container.innerHTML = '<div class="loading">⏳ Загрузка...</div>';
+    const container = document.getElementById('servicesList');
+    container.innerHTML = '<div class="loading">⏳ Загрузка...</div>';
 
-  try {
-    // 1. Проверяем доступность сервера
-    const test = await fetch('http://localhost:3000');
-    console.log('✅ Сервер доступен');
+    try {
+        // Загружаем услуги из localStorage
+        const services = JSON.parse(localStorage.getItem('autoservice_services') || '[]');
+        console.log(`✅ Загружено услуг: ${services.length}`, services);
 
-    // 2. Загружаем услуги
-    const response = await fetch('http://localhost:3000/services');
+        // Показываем услуги
+        displayServices(services);
 
-    if (!response.ok) {
-      throw new Error(`Сервер вернул ${response.status}`);
+    } catch (error) {
+        console.error('❌ Ошибка загрузки:', error);
+        showError(`Не удалось загрузить услуги: ${error.message}`);
     }
-
-    const services = await response.json();
-    console.log(`✅ Загружено услуг: ${services.length}`, services);
-
-    // 3. Показываем услуги
-    displayServices(services);
-
-  } catch (error) {
-    console.error('❌ Ошибка загрузки:', error);
-    showError(`Не удалось загрузить услуги: ${error.message}`);
-  }
 }
 
 // ========== ПОКАЗАТЬ УСЛУГИ ==========
 function displayServices(services) {
-  const container = document.getElementById('servicesList');
+    const container = document.getElementById('servicesList');
 
-  if (!services || services.length === 0) {
-    container.innerHTML = `
+    if (!services || services.length === 0) {
+        container.innerHTML = `
             <div style="text-align: center; padding: 40px; color: #666;">
                 <p>📭 Нет услуг</p>
                 <p>Добавьте первую услугу через форму выше</p>
             </div>
         `;
-    return;
-  }
+        return;
+    }
 
-  container.innerHTML = services.map(service => `
+    container.innerHTML = services.map(service => `
         <div class="service-card" data-id="${service.id}">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                 <div>
@@ -99,11 +89,11 @@ function displayServices(services) {
             ` : ''}
             
             <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button onclick="editService(${service.id})" 
+                <button onclick="editService('${service.id}')" 
                         style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
                     ✏️ Изменить
                 </button>
-                <button onclick="deleteService(${service.id})" 
+                <button onclick="deleteService('${service.id}')" 
                         style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
                     🗑️ Удалить
                 </button>
@@ -111,9 +101,9 @@ function displayServices(services) {
         </div>
     `).join('');
 
-  // Добавляем стили для карточек
-  const style = document.createElement('style');
-  style.textContent = `
+    // Добавляем стили для карточек
+    const style = document.createElement('style');
+    style.textContent = `
         .service-card {
             background: white;
             border: 1px solid #ddd;
@@ -132,233 +122,224 @@ function displayServices(services) {
             color: #666;
         }
     `;
-  document.head.appendChild(style);
+    document.head.appendChild(style);
 }
 
 // ========== НАСТРОЙКА ФОРМЫ ==========
 function setupForm() {
-  const form = document.getElementById('serviceForm');
+    const form = document.getElementById('serviceForm');
 
-  form.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    await saveService();
-  });
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        saveService();
+    });
 
-  // Кнопка очистки
-  document.getElementById('clearForm').addEventListener('click', function () {
-    resetForm();
-    showMessage('Форма очищена', 'info');
-  });
+    // Кнопка очистки
+    document.getElementById('clearForm').addEventListener('click', function () {
+        resetForm();
+        showMessage('Форма очищена', 'info');
+    });
 }
 
 // ========== РЕДАКТИРОВАТЬ УСЛУГУ ==========
-async function editService(id) {
-  console.log('Редактируем услугу ID:', id);
+function editService(id) {
+    console.log('Редактируем услугу ID:', id);
 
-  try {
-    const response = await fetch(`http://localhost:3000/services/${id}`);
-    const service = await response.json();
+    try {
+        const services = JSON.parse(localStorage.getItem('autoservice_services') || '[]');
+        const service = services.find(s => s.id === id);
+        
+        if (!service) {
+            showMessage('Услуга не найдена', 'error');
+            return;
+        }
 
-    // Заполняем форму
-    document.getElementById('serviceId').value = service.id;
-    document.getElementById('serviceTitle').value = service.title || '';
-    document.getElementById('servicePrice').value = service.price || '';
-    document.getElementById('serviceDescription').value = service.description || '';
-    document.getElementById('serviceImage').value = service.image || '';
+        // Заполняем форму
+        document.getElementById('serviceId').value = service.id;
+        document.getElementById('serviceTitle').value = service.title || '';
+        document.getElementById('servicePrice').value = service.price || '';
+        document.getElementById('serviceDescription').value = service.description || '';
+        document.getElementById('serviceImage').value = service.image || '';
 
-    // Пункты
-    if (service.items && Array.isArray(service.items)) {
-      document.getElementById('serviceItems').value = service.items.join('\n');
-    } else {
-      document.getElementById('serviceItems').value = '';
+        // Пункты
+        if (service.items && Array.isArray(service.items)) {
+            document.getElementById('serviceItems').value = service.items.join('\n');
+        } else {
+            document.getElementById('serviceItems').value = '';
+        }
+
+        // Показываем кнопки обновления
+        document.getElementById('addService').style.display = 'none';
+        document.getElementById('updateService').style.display = 'inline-block';
+        document.getElementById('deleteServiceBtn').style.display = 'inline-block';
+
+        // Прокручиваем к форме
+        document.getElementById('serviceForm').scrollIntoView({ behavior: 'smooth' });
+
+        showMessage(`Загружена услуга: "${service.title}"`, 'info');
+
+    } catch (error) {
+        console.error('Ошибка загрузки:', error);
+        showMessage('Ошибка загрузки услуги', 'error');
     }
-
-    // Показываем кнопки обновления
-    document.getElementById('addService').style.display = 'none';
-    document.getElementById('updateService').style.display = 'inline-block';
-    document.getElementById('deleteServiceBtn').style.display = 'inline-block';
-
-    // Прокручиваем к форме
-    document.getElementById('serviceForm').scrollIntoView({ behavior: 'smooth' });
-
-    showMessage(`Загружена услуга: "${service.title}"`, 'info');
-
-  } catch (error) {
-    console.error('Ошибка загрузки:', error);
-    showMessage('Ошибка загрузки услуги', 'error');
-  }
 }
 
 // ========== СОХРАНИТЬ/ОБНОВИТЬ ==========
-async function saveService() {
-  const id = document.getElementById('serviceId').value;
-  const title = document.getElementById('serviceTitle').value.trim();
-  const price = document.getElementById('servicePrice').value.trim();
-  const description = document.getElementById('serviceDescription').value.trim();
-  const image = document.getElementById('serviceImage').value.trim();
-  const itemsText = document.getElementById('serviceItems').value.trim();
+function saveService() {
+    const id = document.getElementById('serviceId').value;
+    const title = document.getElementById('serviceTitle').value.trim();
+    const price = document.getElementById('servicePrice').value.trim();
+    const description = document.getElementById('serviceDescription').value.trim();
+    const image = document.getElementById('serviceImage').value.trim();
+    const itemsText = document.getElementById('serviceItems').value.trim();
 
-  // Проверка
-  if (!title || !price || !description) {
-    showMessage('Заполните обязательные поля: название, цена, описание', 'error');
-    return;
-  }
-
-  // Парсим пункты
-  const items = itemsText ? itemsText.split('\n').map(item => item.trim()).filter(item => item) : [];
-
-  const serviceData = {
-    title,
-    price,
-    description,
-    image: image || `../img/card${Math.floor(Math.random() * 4) + 1}-img.png`,
-    items
-  };
-
-  console.log('Сохранение данных:', serviceData);
-
-  try {
-    let response;
-
-    if (id) {
-      // Обновляем
-      response = await fetch(`http://localhost:3000/services/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(serviceData)
-      });
-    } else {
-      // Добавляем новую
-      response = await fetch('http://localhost:3000/services', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(serviceData)
-      });
+    // Проверка
+    if (!title || !price || !description) {
+        showMessage('Заполните обязательные поля: название, цена, описание', 'error');
+        return;
     }
 
-    if (response.ok) {
-      const result = await response.json();
-      console.log('✅ Успешно сохранено:', result);
+    // Парсим пункты
+    const items = itemsText ? itemsText.split('\n').map(item => item.trim()).filter(item => item) : [];
 
-      showMessage(id ? '✅ Услуга обновлена!' : '✅ Услуга добавлена!', 'success');
+    const serviceData = {
+        title,
+        price,
+        description,
+        image: image || `../img/card${Math.floor(Math.random() * 4) + 1}-img.png`,
+        items
+    };
 
-      resetForm();
-      loadServices();
+    console.log('Сохранение данных:', serviceData);
 
-    } else {
-      throw new Error('Сервер вернул ошибку');
+    try {
+        if (id) {
+            // Обновляем
+            const updatedService = window.updateServiceInStorage(id, serviceData);
+            if (updatedService) {
+                showMessage('✅ Услуга обновлена!', 'success');
+            } else {
+                showMessage('Услуга не найдена', 'error');
+            }
+        } else {
+            // Добавляем новую
+            const newService = {
+                id: Date.now().toString(),
+                ...serviceData
+            };
+            window.saveServiceToStorage(newService);
+            showMessage('✅ Услуга добавлена!', 'success');
+        }
+
+        resetForm();
+        loadServices();
+
+    } catch (error) {
+        console.error('❌ Ошибка сохранения:', error);
+        showMessage('Ошибка при сохранении', 'error');
     }
-
-  } catch (error) {
-    console.error('❌ Ошибка сохранения:', error);
-    showMessage('Ошибка при сохранении', 'error');
-  }
 }
 
 // ========== ОБНОВИТЬ УСЛУГУ ==========
 function updateService() {
-  document.getElementById('serviceForm').requestSubmit();
+    document.getElementById('serviceForm').requestSubmit();
 }
 
 // ========== УДАЛИТЬ УСЛУГУ ==========
-async function deleteService(id) {
-  if (!confirm('❓ Удалить эту услугу?')) {
-    return;
-  }
-
-  try {
-    const response = await fetch(`http://localhost:3000/services/${id}`, {
-      method: 'DELETE'
-    });
-
-    if (response.ok) {
-      showMessage('✅ Услуга удалена', 'success');
-
-      // Если удаляем текущую редактируемую услугу
-      const currentId = document.getElementById('serviceId').value;
-      if (currentId == id) {
-        resetForm();
-      }
-
-      loadServices();
+function deleteService(id) {
+    if (!confirm('❓ Удалить эту услугу?')) {
+        return;
     }
 
-  } catch (error) {
-    console.error('Ошибка удаления:', error);
-    showMessage('Ошибка при удалении', 'error');
-  }
+    try {
+        const updatedServices = window.deleteServiceFromStorage(id);
+        
+        showMessage('✅ Услуга удалена', 'success');
+
+        // Если удаляем текущую редактируемую услугу
+        const currentId = document.getElementById('serviceId').value;
+        if (currentId == id) {
+            resetForm();
+        }
+
+        loadServices();
+
+    } catch (error) {
+        console.error('Ошибка удаления:', error);
+        showMessage('Ошибка при удалении', 'error');
+    }
 }
 
 // ========== УДАЛИТЬ ТЕКУЩУЮ ==========
 function deleteCurrentService() {
-  const id = document.getElementById('serviceId').value;
-  if (id) {
-    deleteService(id);
-  }
+    const id = document.getElementById('serviceId').value;
+    if (id) {
+        deleteService(id);
+    }
 }
 
 // ========== СООБЩЕНИЯ ==========
 function showMessage(text, type) {
-  // Удаляем старое сообщение
-  const oldMsg = document.getElementById('statusMessage');
-  if (oldMsg) oldMsg.remove();
+    // Удаляем старое сообщение
+    const oldMsg = document.getElementById('statusMessage');
+    if (oldMsg) oldMsg.remove();
 
-  // Создаем новое
-  const message = document.createElement('div');
-  message.id = 'statusMessage';
-  message.innerHTML = text;
+    // Создаем новое
+    const message = document.createElement('div');
+    message.id = 'statusMessage';
+    message.innerHTML = text;
 
-  // Стили
-  const styles = {
-    position: 'fixed',
-    top: '20px',
-    right: '20px',
-    padding: '15px 20px',
-    borderRadius: '5px',
-    zIndex: '1000',
-    minWidth: '300px',
-    maxWidth: '500px',
-    animation: 'fadeIn 0.3s'
-  };
+    // Стили
+    const styles = {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        padding: '15px 20px',
+        borderRadius: '5px',
+        zIndex: '1000',
+        minWidth: '300px',
+        maxWidth: '500px',
+        animation: 'fadeIn 0.3s'
+    };
 
-  if (type === 'success') {
-    Object.assign(styles, {
-      background: '#d4edda',
-      color: '#155724',
-      border: '1px solid #c3e6cb'
-    });
-  } else if (type === 'error') {
-    Object.assign(styles, {
-      background: '#f8d7da',
-      color: '#721c24',
-      border: '1px solid #f5c6cb'
-    });
-  } else {
-    Object.assign(styles, {
-      background: '#d1ecf1',
-      color: '#0c5460',
-      border: '1px solid #bee5eb'
-    });
-  }
-
-  Object.assign(message.style, styles);
-
-  document.body.appendChild(message);
-
-  // Удаляем через 5 секунд
-  setTimeout(() => {
-    if (message.parentNode) {
-      message.style.opacity = '0';
-      message.style.transition = 'opacity 0.5s';
-      setTimeout(() => message.remove(), 500);
+    if (type === 'success') {
+        Object.assign(styles, {
+            background: '#d4edda',
+            color: '#155724',
+            border: '1px solid #c3e6cb'
+        });
+    } else if (type === 'error') {
+        Object.assign(styles, {
+            background: '#f8d7da',
+            color: '#721c24',
+            border: '1px solid #f5c6cb'
+        });
+    } else {
+        Object.assign(styles, {
+            background: '#d1ecf1',
+            color: '#0c5460',
+            border: '1px solid #bee5eb'
+        });
     }
-  }, 5000);
+
+    Object.assign(message.style, styles);
+
+    document.body.appendChild(message);
+
+    // Удаляем через 5 секунд
+    setTimeout(() => {
+        if (message.parentNode) {
+            message.style.opacity = '0';
+            message.style.transition = 'opacity 0.5s';
+            setTimeout(() => message.remove(), 500);
+        }
+    }, 5000);
 }
 
 // ========== ОШИБКА ==========
 function showError(text) {
-  const container = document.getElementById('servicesList');
-  container.innerHTML = `
+    const container = document.getElementById('servicesList');
+    container.innerHTML = `
         <div style="
             background: #fff;
             border: 2px solid #dc3545;
@@ -373,9 +354,9 @@ function showError(text) {
             <div style="margin: 20px 0; text-align: left; background: #f8f9fa; padding: 15px; border-radius: 5px;">
                 <strong>Проверьте:</strong>
                 <ol style="margin: 10px 0 0 20px;">
-                    <li>Запущен ли сервер: <code>json-server --watch db.json --port 3000</code></li>
-                    <li>Открыть: <a href="http://localhost:3000/services" target="_blank">http://localhost:3000/services</a></li>
-                    <li>Файл db.json в корне проекта</li>
+                    <li>Данные в localStorage</li>
+                    <li>Проверьте вкладку Application в DevTools</li>
+                    <li>Попробуйте очистить localStorage и перезагрузить</li>
                 </ol>
             </div>
             
@@ -394,33 +375,21 @@ function showError(text) {
 
 // ========== СБРОС ФОРМЫ ==========
 function resetForm() {
-  document.getElementById('serviceForm').reset();
-  document.getElementById('serviceId').value = '';
+    document.getElementById('serviceForm').reset();
+    document.getElementById('serviceId').value = '';
 
-  // Показываем кнопку добавления
-  document.getElementById('addService').style.display = 'inline-block';
-  document.getElementById('updateService').style.display = 'none';
-  document.getElementById('deleteServiceBtn').style.display = 'none';
+    // Показываем кнопку добавления
+    document.getElementById('addService').style.display = 'inline-block';
+    document.getElementById('updateService').style.display = 'none';
+    document.getElementById('deleteServiceBtn').style.display = 'none';
 }
 
 // ========== ВЫХОД ==========
 function logout() {
-  if (confirm('Выйти из админ панели?')) {
-    localStorage.removeItem('currentUser');
-    window.location.href = '../index.html';
-  }
-}
-
-// ========== ТЕСТ ==========
-function testServer() {
-  fetch('http://localhost:3000/services')
-    .then(response => response.json())
-    .then(data => {
-      alert(`✅ Сервер работает! Услуг: ${data.length}\n\nПервая услуга: ${data[0]?.title || 'нет'}`);
-    })
-    .catch(error => {
-      alert(`❌ Ошибка: ${error.message}\n\nЗапустите: json-server --watch db.json --port 3000`);
-    });
+    if (confirm('Выйти из админ панели?')) {
+        localStorage.removeItem('autoservice_currentUser');
+        window.location.href = '../index.html';
+    }
 }
 
 // ========== ГЛОБАЛЬНЫЕ ФУНКЦИИ ==========
@@ -430,7 +399,6 @@ window.deleteService = deleteService;
 window.updateService = updateService;
 window.deleteCurrentService = deleteCurrentService;
 window.logout = logout;
-window.testServer = testServer;
 
 // Добавляем анимацию для сообщений
 const animationStyle = document.createElement('style');
