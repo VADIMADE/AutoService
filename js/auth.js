@@ -1,51 +1,166 @@
 // js/auth.js
 
-const DATA_FILE = '../json/data.json';
-const CURRENT_USER_KEY = 'currentUser';
-const LOCAL_USERS_KEY = 'localUsers';
-const LOCAL_BOOKINGS_KEY = 'userBookings';
+const STORAGE_KEYS = {
+    CURRENT_USER: 'autoservice_currentUser',
+    USERS: 'autoservice_users',
+    BOOKINGS: 'autoservice_bookings',
+    SERVICES: 'autoservice_services'
+};
 
 let currentUser = null;
-let usersData = [];
-let bookingsData = [];
 
 // Инициализация
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', function() {
     console.log('auth.js загружен');
-    await loadData();
+    initializeDefaultData();
     loadCurrentUser();
     setupHeaderButtons();
 });
 
-// Загрузка данных из JSON
-async function loadData() {
-    try {
-        const response = await fetch(DATA_FILE);
-        if (!response.ok) throw new Error('Ошибка загрузки файла');
-        
-        const data = await response.json();
-        usersData = data.users || [];
-        
-        // Загружаем локальные бронирования
-        const localBookings = JSON.parse(localStorage.getItem(LOCAL_BOOKINGS_KEY) || '[]');
-        bookingsData = [...(data.bookings || []), ...localBookings];
-        
-        console.log('Данные загружены:', usersData.length, 'пользователей');
-    } catch (error) {
-        console.error('Ошибка:', error);
-        showMessage('Ошибка загрузки данных', 'error');
+// Инициализация данных по умолчанию
+function initializeDefaultData() {
+    // Проверяем, есть ли данные пользователей
+    let users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+    
+    if (users.length === 0) {
+        // Создаем начальных пользователей
+        users = [
+            {
+                id: '1',
+                firstName: 'Вадим',
+                lastName: 'Лаврук',
+                email: 'vadimlavruk4@gmail.com',
+                phone: '+375336518780',
+                password: 'password123',
+                role: 'admin',
+                registrationDate: '2024-01-15'
+            },
+            {
+                id: '2',
+                firstName: 'Анна',
+                lastName: 'Иванова',
+                email: 'annaivanova@gmail.com',
+                phone: '+375291234567',
+                password: 'password456',
+                role: 'client',
+                registrationDate: '2024-02-20'
+            }
+        ];
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+        console.log('Созданы пользователи по умолчанию');
+    }
+    
+    // Инициализируем услуги
+    let services = JSON.parse(localStorage.getItem(STORAGE_KEYS.SERVICES) || '[]');
+    
+    if (services.length === 0) {
+        services = [
+            {
+                id: '1',
+                title: 'ПЛАНОВОЕ ТО',
+                price: 'от 250 бел. руб.',
+                description: 'Комплексная диагностика и замена расходников по регламенту. Сохраните здоровье и ценность вашего автомобиля',
+                image: '../img/card1-img.png',
+                items: [
+                    'Замена моторного масла и фильтра',
+                    'Замена воздушного фильтра',
+                    'Замена салонного фильтра',
+                    'Диагностика систем двигателя',
+                    'Проверка уровня всех технических жидкостей'
+                ]
+            },
+            {
+                id: '2',
+                title: 'СРОЧНЫЙ РЕМОНТ',
+                price: 'от 200 бел. руб.',
+                description: 'Устраним любую неисправность двигателя, ходовой, электроники. Четкий диагноз и фиксированная цена',
+                image: '../img/card2-img.png',
+                items: [
+                    'Диагностика неисправностей',
+                    'Ремонт двигателя',
+                    'Ремонт ходовой части',
+                    'Устранение проблем с электроникой',
+                    'Замена датчиков, ремней ГРМ, помп'
+                ]
+            },
+            {
+                id: '3',
+                title: 'ШИНОМОНТАЖ',
+                price: 'от 150 бел. руб.',
+                description: 'Быстрая замена и балансировка колес. Предлагаем услуги сезонного хранения вашей резины',
+                image: '../img/card3-img.png',
+                items: [
+                    'Демонтаж/монтаж шин',
+                    'Компьютерная балансировка',
+                    'Ремонт проколов',
+                    'Замена вентилей',
+                    'Хранение сезонной резины'
+                ]
+            },
+            {
+                id: '4',
+                title: 'ТОРМОЗНАЯ СИСТЕМА',
+                price: 'от 120 бел. руб.',
+                description: 'Замена колодок, дисков и тормозной жидкости. Вернем уверенность в торможении',
+                image: '../img/card4-img.png',
+                items: [
+                    'Диагностика износа тормозных механизмов',
+                    'Замена тормозных колодок (передних/задних)',
+                    'Замена тормозных дисков или барабанов',
+                    'Замена/прокачка тормозной жидкости',
+                    'Чистка и смазка суппортов'
+                ]
+            },
+            {
+                id: '5',
+                title: 'КУЗОВНЫЕ РАБОТЫ',
+                price: 'от 450 бел. руб.',
+                description: 'Устранение вмятин, царапин, последствий ДТП. Качественная покраска элементов кузова с подбором цвета',
+                image: '../img/card5-img.png',
+                items: [
+                    'Рихтовка и вытягивание вмятин (без покраски)',
+                    'Локальная покраска деталей',
+                    'Полная покраска автомобиля',
+                    'Полировка кузова (защитная, восстановительная)',
+                    'Антикоррозийная обработка'
+                ]
+            },
+            {
+                id: '6',
+                title: 'ОБСЛУЖИВАНИЕ',
+                price: 'от 80 бел. руб.',
+                description: 'Своевременная замена всех рабочих жидкостей — залог долгой службы агрегатов. Используем только качественные материалы',
+                image: '../img/card6-img.png',
+                items: [
+                    'Замена масла в АКПП / МКПП',
+                    'Замена масла в редукторе',
+                    'Замена жидкости ГУР',
+                    'Замена охлаждающей жидкости (антифриза)',
+                    'Промывка систем перед заменой'
+                ]
+            }
+        ];
+        localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
+        console.log('Созданы услуги по умолчанию');
+    }
+    
+    // Инициализируем бронирования
+    let bookings = JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || '[]');
+    if (bookings.length === 0) {
+        localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify([]));
     }
 }
 
 // Загрузка текущего пользователя
 function loadCurrentUser() {
-    const userData = localStorage.getItem(CURRENT_USER_KEY);
+    const userData = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
     if (userData) {
         try {
             currentUser = JSON.parse(userData);
+            console.log('Текущий пользователь:', currentUser.firstName);
             updateHeaderButtons();
         } catch (error) {
-            localStorage.removeItem(CURRENT_USER_KEY);
+            localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
         }
     }
 }
@@ -60,7 +175,7 @@ function saveCurrentUser(user) {
         phone: user.phone,
         role: user.role
     };
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(currentUser));
     updateHeaderButtons();
 }
 
@@ -80,7 +195,6 @@ function setupHeaderButtons() {
         registerBtn.onclick = (e) => {
             e.preventDefault();
             if (currentUser) {
-                // Открываем профиль
                 window.location.href = '../pages/profile.html';
             } else {
                 openSignupModal();
@@ -155,7 +269,6 @@ function openSigninModal() {
     
     document.body.appendChild(modal);
     
-    // Обработчики
     modal.querySelector('.close-modal').onclick = () => modal.remove();
     modal.querySelector('.modal-overlay').onclick = (e) => {
         if (e.target === modal.querySelector('.modal-overlay')) modal.remove();
@@ -219,7 +332,6 @@ function openSignupModal() {
     
     document.body.appendChild(modal);
     
-    // Обработчики
     modal.querySelector('.close-modal').onclick = () => modal.remove();
     modal.querySelector('.modal-overlay').onclick = (e) => {
         if (e.target === modal.querySelector('.modal-overlay')) modal.remove();
@@ -250,8 +362,8 @@ function handleSignin(e) {
         return;
     }
     
-    // Ищем пользователя в базе из JSON
-    const user = usersData.find(u => u.email === email && u.password === password);
+    const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+    const user = users.find(u => u.email === email && u.password === password);
     
     if (!user) {
         showMessage('Неверный email или пароль', 'error');
@@ -275,7 +387,6 @@ function handleSignup(e) {
     const phone = document.getElementById('signupPhone').value.trim();
     const password = document.getElementById('signupPassword').value.trim();
     
-    // Валидация
     if (!firstName || !lastName || !email || !phone || !password) {
         showMessage('Заполните все поля', 'error');
         return;
@@ -292,13 +403,12 @@ function handleSignup(e) {
         return;
     }
     
-    // Проверяем существование пользователя
-    if (usersData.some(u => u.email === email)) {
+    const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+    if (users.some(u => u.email === email)) {
         showMessage('Пользователь с таким email уже существует', 'error');
         return;
     }
     
-    // Создаем нового пользователя
     const newUser = {
         id: Date.now().toString(),
         firstName,
@@ -310,13 +420,8 @@ function handleSignup(e) {
         registrationDate: new Date().toISOString().split('T')[0]
     };
     
-    // Сохраняем локально
-    const localUsers = JSON.parse(localStorage.getItem(LOCAL_USERS_KEY) || '[]');
-    localUsers.push(newUser);
-    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(localUsers));
-    
-    // Добавляем в текущую базу
-    usersData.push(newUser);
+    users.push(newUser);
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
     
     saveCurrentUser(newUser);
     document.querySelector('.auth-modal')?.remove();
@@ -348,7 +453,7 @@ function checkBookingRedirect() {
 function logout() {
     if (confirm('Выйти из аккаунта?')) {
         currentUser = null;
-        localStorage.removeItem(CURRENT_USER_KEY);
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
         updateHeaderButtons();
         showMessage('Вы успешно вышли', 'success');
     }
@@ -390,6 +495,37 @@ function showMessage(text, type = 'info') {
 window.getCurrentUser = () => currentUser;
 window.checkAuth = () => currentUser !== null;
 window.logout = logout;
+window.getUsersFromStorage = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+window.getServicesFromStorage = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.SERVICES) || '[]');
+window.getBookingsFromStorage = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || '[]');
+window.saveBookingToStorage = (booking) => {
+    const bookings = JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || '[]');
+    bookings.push(booking);
+    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+    return booking;
+};
+window.saveServiceToStorage = (service) => {
+    const services = JSON.parse(localStorage.getItem(STORAGE_KEYS.SERVICES) || '[]');
+    services.push(service);
+    localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
+    return service;
+};
+window.updateServiceInStorage = (id, updatedService) => {
+    const services = JSON.parse(localStorage.getItem(STORAGE_KEYS.SERVICES) || '[]');
+    const index = services.findIndex(s => s.id === id);
+    if (index !== -1) {
+        services[index] = { ...services[index], ...updatedService };
+        localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
+        return services[index];
+    }
+    return null;
+};
+window.deleteServiceFromStorage = (id) => {
+    const services = JSON.parse(localStorage.getItem(STORAGE_KEYS.SERVICES) || '[]');
+    const filtered = services.filter(s => s.id !== id);
+    localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(filtered));
+    return filtered;
+};
 
 // Добавляем стили
 const style = document.createElement('style');
@@ -528,4 +664,3 @@ style.textContent = `
 `;
 
 document.head.appendChild(style);
-
